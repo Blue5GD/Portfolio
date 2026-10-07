@@ -1,3 +1,7 @@
+## Project plan
+
+Before building anything, read [docs/PLAN.md](docs/PLAN.md). It is the full, approved build plan for this portfolio (content, design, game, audio, file structure, and decisions not to re-ask). Reference files are in `docs/plan-assets/`.
+
 ## Development
 
 When starting the dev server, use background mode:
