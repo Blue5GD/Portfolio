@@ -37,4 +37,8 @@ Warmup is still in `src/game/levels.ts`, but it is not on the level select. It i
 
 ## Music
 
-The game's songs are not wired up yet. Before any of them go on the public site, confirm each artist's usage terms, or get permission.
+Each level plays one looping song from `public/audio/`. The file name, artist, and source link for each song are on its course in `src/game/levels.ts`, and the "Music credits" button on the level select lists them. `src/game/audio.ts` plays them: the song keeps going when you crash, pauses with the game or an open panel, and stops when you leave the level. If a file is missing, that level runs silently.
+
+The original downloads sit in `docs/plan-assets/` and are ignored by git, so only the renamed copies in `public/audio/` get committed.
+
+You are responsible for getting permission, or confirming each artist's usage terms, before deploying these songs on the public site.

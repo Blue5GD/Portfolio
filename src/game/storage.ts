@@ -2,8 +2,8 @@
 // localStorage is a small key/value store the page can read after a refresh.
 //
 // "b5gd:progress" remembers how far the game has been cleared.
-// "b5gd:muted" remembers the speaker button. The music itself comes later;
-// until then the button only stores the choice.
+// "b5gd:muted" remembers the speaker button, so a muted visitor stays muted
+// after a refresh.
 
 const PROGRESS_KEY = "b5gd:progress";
 const MUTE_KEY = "b5gd:muted";

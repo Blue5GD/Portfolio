@@ -18,6 +18,10 @@ export interface Course {
   difficulty: DifficultyId;
   song: string;
   artist: string;
+  /** File name inside public/audio/. audio.ts adds the base path. */
+  audio: string;
+  /** Where the song is published. The Music Credits panel links here. */
+  songUrl: string;
   /** Portfolio section named on the level card. */
   section: string;
   /** Absent until that course's map exists. The card can still unlock. */
@@ -80,6 +84,8 @@ export const courses: Course[] = [
     difficulty: "normal",
     song: "Race Around the World",
     artist: "Waterflame",
+    audio: "01-race-around-the-world.mp3",
+    songUrl: "https://www.newgrounds.com/audio/listen/110798",
     section: "About + Featured",
     level: firstLevel,
   },
@@ -89,6 +95,8 @@ export const courses: Course[] = [
     difficulty: "hard",
     song: "Another World",
     artist: "Razorrekker",
+    audio: "02-another-world.mp3",
+    songUrl: "https://www.newgrounds.com/audio/listen/659843",
     section: "Projects",
   },
   {
@@ -97,6 +105,8 @@ export const courses: Course[] = [
     difficulty: "harder",
     song: "The Falling Mysts",
     artist: "Dimrain47",
+    audio: "03-the-falling-mysts.mp3",
+    songUrl: "https://www.newgrounds.com/audio/listen/508568",
     section: "Experience, High School",
   },
   {
@@ -105,6 +115,8 @@ export const courses: Course[] = [
     difficulty: "insane",
     song: "At the Speed of Light",
     artist: "Dimrain47",
+    audio: "04-at-the-speed-of-light.mp3",
+    songUrl: "https://www.newgrounds.com/audio/listen/467339",
     section: "Experience, At Yale",
   },
   {
@@ -112,7 +124,10 @@ export const courses: Course[] = [
     title: "Last Hope",
     difficulty: "hard-demon",
     song: "Figures",
+    // Published on Newgrounds by Rukkus, who releases as ~NK~.
     artist: "~NK~",
+    audio: "05-figures.mp3",
+    songUrl: "https://www.newgrounds.com/audio/listen/541008",
     section: "Awards",
   },
   {
@@ -121,6 +136,8 @@ export const courses: Course[] = [
     difficulty: "extreme-demon",
     song: "Battle Against a True Hero",
     artist: "Toby Fox",
+    audio: "06-battle-against-a-true-hero.mp3",
+    songUrl: "https://tobyfox.bandcamp.com/album/undertale-soundtrack",
     section: "Skills, Education, Contact",
   },
 ];

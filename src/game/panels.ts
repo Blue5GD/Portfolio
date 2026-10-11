@@ -7,6 +7,7 @@ import type {
   Project,
   SkillGroup,
 } from "../data/types";
+import type { Course } from "./levels";
 import type { ContentRef } from "./types";
 
 // The portfolio words live in src/data and are also shown on the classic page.
@@ -98,6 +99,27 @@ export function fillPanel(
       addText(body, "p", `This info block has an unknown kind (${JSON.stringify(leftover)}).`);
     }
   }
+}
+
+/** Music Credits: one row per level, from the same list the level select uses. */
+export function fillCredits(title: HTMLElement, body: HTMLElement, courses: Course[]): void {
+  body.replaceChildren();
+  title.textContent = "Music Credits";
+  const list = document.createElement("ul");
+  list.className = "credits";
+  for (const course of courses) {
+    const li = document.createElement("li");
+    const song = document.createElement("span");
+    song.className = "label";
+    song.textContent = course.song;
+    const by = document.createElement("span");
+    by.textContent = `${course.artist} · ${course.title}`;
+    li.append(song, by);
+    addLink(li, course.songUrl, "Source", true);
+    list.append(li);
+  }
+  body.append(list);
+  addText(body, "p", "All songs belong to their artists.", "dates");
 }
 
 function fillFeatured(title: HTMLElement, body: HTMLElement, item: FeaturedItem | undefined, index: number): void {

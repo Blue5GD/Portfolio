@@ -1,9 +1,10 @@
+import { createMusic } from "./audio";
 import { difficultyLabel, faceUrl } from "./faces";
 import { attachInput } from "./input";
 import { parseLevel } from "./level";
 import { courses } from "./levels";
 import { startLoop } from "./loop";
-import { fillPanel, readContent } from "./panels";
+import { fillCredits, fillPanel, readContent } from "./panels";
 import { createGame, step } from "./physics";
 import { render } from "./render";
 import { loadMuted, loadProgress, markCleared, saveMuted, saveProgress, type Progress } from "./storage";
@@ -20,6 +21,7 @@ import type { ContentRef, GameState } from "./types";
 //   level.ts      turns the ASCII map into cells physics can look up
 //   levels.ts     the six courses; only First Level has a map
 //   panels.ts     turns an info block into the dialog, using src/data
+//   audio.ts      one looping song per level
 //   storage.ts    saved unlocks, clears, attempts, and mute
 //   faces.ts      difficulty faces on the cards and the pause screen
 //   render.ts     draws the map, the cube, and the progress bar
@@ -39,6 +41,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   const pauseBtn = document.querySelector<HTMLButtonElement>("#pause-btn");
   const skipBtn = document.querySelector<HTMLButtonElement>("#skip-btn");
   const resetBtn = document.querySelector<HTMLButtonElement>("#reset-progress");
+  const creditsBtn = document.querySelector<HTMLButtonElement>("#credits-btn");
   const status = document.querySelector<HTMLElement>("#game-status");
   const muteButtons = [
     ...document.querySelectorAll<HTMLButtonElement>("[data-mute]"),
@@ -60,6 +63,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     !pauseBtn ||
     !skipBtn ||
     !resetBtn ||
+    !creditsBtn ||
     !status ||
     muteButtons.length === 0
   ) {
@@ -86,6 +90,10 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   let stopLoop: (() => void) | null = null;
   let progress: Progress = loadProgress(courses.length);
   let muted = loadMuted();
+  const music = createMusic(
+    courses.map((course) => course.audio),
+    muted,
+  );
 
   const { input, detach } = attachInput(() => dialog.open || !playing, toggleMute);
 
@@ -164,6 +172,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   function toggleMute() {
     muted = !muted;
     saveMuted(muted);
+    music.setMuted(muted);
     syncMute();
   }
 
@@ -294,6 +303,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
       });
     };
     next.onWin = () => {
+      music.stop();
       markCleared(progress, index, courses.length);
       saveProgress(progress);
       const following = courses[index + 1];
@@ -326,6 +336,8 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     playing = true;
     fit();
     canvas.focus();
+    // This runs inside the Play click, which is what lets the browser start sound.
+    music.start(index);
 
     stopLoop = startLoop(
       (dt) => {
@@ -333,6 +345,8 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
       },
       () => {
         if (!state) return;
+        // Dead still counts as playing, so a crash never interrupts the song.
+        music.setActive(state.phase === "play" || state.phase === "dead");
         render(context, state);
         syncStatus();
       },
@@ -342,6 +356,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   function showSelect() {
     playing = false;
     currentIndex = -1;
+    music.stop();
     if (stopLoop) {
       stopLoop();
       stopLoop = null;
@@ -370,6 +385,11 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   });
   skipBtn.addEventListener("click", skipLevel);
   for (const button of muteButtons) button.addEventListener("click", toggleMute);
+  creditsBtn.addEventListener("click", () => {
+    if (dialog.open) return;
+    fillCredits(dialogTitle, dialogBody, courses);
+    openDialog("Back", () => {});
+  });
   resetBtn.addEventListener("click", () => {
     if (dialog.open) return;
     dialogTitle.textContent = "Reset progress?";
@@ -435,6 +455,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
 
   function cleanup() {
     if (stopLoop) stopLoop();
+    music.destroy();
     detach();
     observer.disconnect();
     motion.removeEventListener("change", onMotion);
