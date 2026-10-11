@@ -1,0 +1,113 @@
+/*
+  Global theme for the whole site.
+  Colors come from the Blue5GD avatar. Change a color here and every
+  component that uses var(--name) updates automatically.
+*/
+
+:root {
+  /* Backgrounds */
+  --bg-deep: #070a2b;
+  --bg-mid: #141a5c;
+  --bg-violet: #3b2394;
+
+  /* Accents */
+  --glow-cyan: #6fd6ff;
+  --ice: #e6f6ff;
+  --accent-pink: #ff9fbf;
+  --spike: #0b0d26;
+  --glow-violet: #8f6bff;
+
+  /* Text */
+  --text: #eaf6ff;
+  --text-muted: #9fb3d9;
+
+  /* Fonts */
+  --font-display: "Lilita One", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+
+  /* Layout */
+  --content-width: 1100px;
+  --radius: 14px;
+}
+
+/* A small reset so every browser starts from the same place. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  /* Diagonal deep-blue-to-violet gradient, fixed so it doesn't scroll away. */
+  background: linear-gradient(135deg, var(--bg-deep) 0%, var(--bg-mid) 55%, var(--bg-violet) 100%);
+  background-attachment: fixed;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 400; /* Lilita One only comes in one weight. */
+  line-height: 1.15;
+  margin: 0 0 0.5em;
+  letter-spacing: 0.01em;
+}
+
+p {
+  margin: 0 0 1em;
+}
+
+a {
+  color: var(--glow-cyan);
+}
+
+img,
+svg {
+  max-width: 100%;
+  display: block;
+}
+
+/* The glowing "Blue5GD" logo text, like the avatar wordmark. */
+.wordmark {
+  font-family: var(--font-display);
+  color: var(--ice);
+  text-shadow:
+    0 0 4px var(--glow-cyan),
+    0 0 12px var(--glow-cyan),
+    0 0 28px rgba(111, 214, 255, 0.6);
+}
+
+/* Visible keyboard focus everywhere (important for accessibility). */
+:focus-visible {
+  outline: 3px solid var(--glow-cyan);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

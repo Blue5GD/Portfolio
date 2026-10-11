@@ -1,0 +1,40 @@
+---
+// BaseLayout wraps every page: it writes the <head> (title, meta tags,
+// fonts, global CSS) once, and pages put their content in the <slot />.
+
+// Importing a CSS file in the frontmatter makes Astro bundle it into the page.
+import "@fontsource/lilita-one/400.css";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
+import "../styles/global.css";
+
+// Props are like function parameters for a component.
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Micah Winesberry | Blue5GD",
+  description = "Portfolio of Micah Winesberry (Blue5GD), Yale CS + Math '30.",
+} = Astro.props;
+
+// The site lives under /Portfolio/, so every internal URL starts from BASE_URL.
+const base = import.meta.env.BASE_URL;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
