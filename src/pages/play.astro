@@ -1,0 +1,439 @@
+---
+// Game mode. The level select and the canvas are the shell; the engine in
+// src/game/ draws the course. Dialogs stay HTML so the text can be selected
+// and read by a screen reader.
+//
+// The JSON tag below is the portfolio text, copied from src/data at build
+// time. panels.ts reads it when an info block opens. The classic page reads
+// the same files, so the words stay in one place.
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { about } from "../data/about";
+import { awards } from "../data/awards";
+import { education } from "../data/education";
+import { experience } from "../data/experience";
+import { featured } from "../data/featured";
+import { identity } from "../data/identity";
+import { projects } from "../data/projects";
+import { skills } from "../data/skills";
+
+const base = import.meta.env.BASE_URL;
+
+function shortUrl(href: string): string {
+  return href.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+}
+
+const gameContent = {
+  about,
+  featured,
+  projects,
+  experience,
+  awards,
+  skills,
+  education,
+  contact: {
+    email: identity.email,
+    github: identity.github,
+    githubLabel: shortUrl(identity.github),
+    linkedin: identity.linkedin,
+    linkedinLabel: shortUrl(identity.linkedin),
+    resumeHref: `${base}${identity.resumeFile}`,
+  },
+};
+---
+
+<BaseLayout
+  title="Play | Blue5GD"
+  description="A platformer through Micah Winesberry's portfolio. Clear a level to unlock the next."
+  mode="play"
+>
+  <main class="shell">
+    <section id="level-select" class="select" aria-labelledby="select-title">
+      <div class="select-inner">
+        <h1 id="select-title">Level select</h1>
+        <p class="intro">
+          Clear a level to unlock the next one. Skip reads every panel in the level if you want the writing without the jumps.
+        </p>
+        <div id="level-cards" class="cards"></div>
+        <p id="attempt-total" class="attempts" aria-live="polite"></p>
+        <div class="select-actions">
+          <button id="mute-select" class="gd-btn gd-btn--alt" type="button" data-mute aria-pressed="false">Mute</button>
+          <button id="reset-progress" class="gd-btn gd-btn--alt" type="button">Reset progress</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage" class="play" hidden>
+      <h1 id="level-title" class="sr-only">First Level</h1>
+      <canvas
+        id="game"
+        width="960"
+        height="540"
+        tabindex="0"
+        aria-label="First Level. Arrow keys or W A S D to move and jump. R restarts at the last checkpoint. Escape pauses."
+      ></canvas>
+      <p id="game-status" class="sr-only" aria-live="polite"></p>
+      <p class="help">Arrows or WASD, hold jump. R restarts. Esc pauses. M mutes.</p>
+      <div class="hud-actions">
+        <button id="mute-hud" class="gd-btn gd-btn--alt" type="button" data-mute aria-pressed="false">Mute</button>
+        <button id="skip-btn" class="gd-btn gd-btn--alt" type="button">Skip level</button>
+        <button id="pause-btn" class="gd-btn gd-btn--alt" type="button">Pause</button>
+      </div>
+    </section>
+
+    <dialog id="notice" aria-labelledby="notice-title">
+      <h2 id="notice-title"></h2>
+      <div id="notice-body"></div>
+      <div class="dialog-actions">
+        <button id="notice-cancel" class="gd-btn gd-btn--alt" type="button" hidden>Cancel</button>
+        <button id="notice-ok" class="gd-btn" type="button">Continue</button>
+      </div>
+    </dialog>
+    <script id="game-content" type="application/json" is:inline set:html={JSON.stringify(gameContent)}></script>
+  </main>
+</BaseLayout>
+
+<script>
+  import { mountGame } from "../game/main";
+
+  const canvas = document.querySelector<HTMLCanvasElement>("#game");
+  if (canvas) mountGame(canvas);
+</script>
+
+<style>
+  :global(html),
+  :global(body) {
+    height: 100%;
+  }
+
+  :global(body:has(#stage:not([hidden]))) {
+    overflow: hidden;
+  }
+
+  :global(.page) {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+  }
+
+  :global(#content) {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .shell {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .select {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 1.25rem 1rem 2rem;
+  }
+
+  .select-inner {
+    width: min(64rem, 100%);
+    margin: 0 auto;
+  }
+
+  .intro {
+    max-width: 40rem;
+    color: var(--text-muted);
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16.5rem, 1fr));
+    gap: 1rem;
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.9rem 0.95rem 1rem;
+    background: linear-gradient(180deg, rgba(16, 22, 84, 0.94), rgba(7, 10, 43, 0.96));
+    border: 3px solid #000;
+    border-radius: 16px;
+    box-shadow:
+      0 0 0 2px rgba(111, 214, 255, 0.28),
+      0 6px 0 #000;
+  }
+
+  .card[data-state="locked"] {
+    opacity: 0.55;
+  }
+
+  .card[data-state="cleared"] {
+    box-shadow:
+      0 0 0 2px rgba(255, 159, 191, 0.55),
+      0 6px 0 #000;
+  }
+
+  .card h2 {
+    margin: 0.35rem 0 0;
+    font-size: 1.45rem;
+  }
+
+  .card p {
+    margin: 0;
+  }
+
+  .face {
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+  }
+
+  .diff {
+    font-family: var(--font-display);
+    color: var(--ice);
+    font-size: 1.05rem;
+  }
+
+  .song,
+  .section {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+  }
+
+  .badge {
+    margin-top: 0.35rem;
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+  }
+
+  .card[data-state="open"] .badge {
+    color: var(--glow-cyan);
+  }
+
+  .card[data-state="cleared"] .badge {
+    color: var(--accent-pink);
+  }
+
+  .card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.75rem;
+  }
+
+  .card-actions .gd-btn,
+  .select-actions .gd-btn,
+  .hud-actions .gd-btn {
+    padding: 0.4rem 0.85rem;
+    font-size: 1rem;
+  }
+
+  .attempts {
+    margin: 1rem 0 0.4rem;
+    color: var(--text-muted);
+  }
+
+  .select-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .play {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: #070a2b;
+    touch-action: none;
+  }
+
+  .help {
+    position: absolute;
+    left: 0.8rem;
+    /* Sits in the sky under the level name, so it never covers the cube. */
+    top: 4.15rem;
+    z-index: 2;
+    margin: 0;
+    max-width: min(28rem, calc(100% - 9.5rem));
+    color: var(--ice);
+    font-size: 0.8rem;
+    text-shadow:
+      0 1px 2px #000,
+      0 0 8px #070a2b;
+    pointer-events: none;
+  }
+
+  .hud-actions {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.7rem;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4rem;
+  }
+
+  @media (min-width: 900px) {
+    .hud-actions {
+      flex-direction: row;
+      max-width: min(22rem, calc(100% - 1.4rem));
+    }
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  #notice {
+    max-width: min(34rem, calc(100% - 2rem));
+    max-height: min(80dvh, 36rem);
+    overflow: auto;
+    padding: 1.25rem 1.35rem 1.15rem;
+    color: var(--text);
+    background: linear-gradient(180deg, rgba(16, 22, 84, 0.98), rgba(7, 10, 43, 0.98));
+    border: 3px solid #000;
+    border-radius: 16px;
+    box-shadow:
+      0 0 0 2px rgba(111, 214, 255, 0.35),
+      0 6px 0 #000;
+  }
+
+  #notice::backdrop {
+    background: rgba(4, 6, 24, 0.62);
+  }
+
+  #notice h2 {
+    margin: 0 0 0.65rem;
+    font-size: 1.7rem;
+    color: var(--ice);
+  }
+
+  #notice h2 a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  #notice h2 a:hover {
+    color: var(--glow-cyan);
+  }
+
+  #notice h3 {
+    margin: 0.85rem 0 0.3rem;
+    font-size: 1.15rem;
+  }
+
+  /* Featured puts the item name directly under the "Featured" title. */
+  #notice-body > h3:first-child {
+    margin-top: 0;
+  }
+
+  #notice p,
+  #notice li {
+    font-size: 1.02rem;
+  }
+
+  #notice .dates,
+  #notice .org {
+    margin-top: 0;
+    color: var(--text-muted);
+  }
+
+  #notice .bullets,
+  #notice .awards,
+  #notice .contact {
+    margin: 0.45rem 0 0;
+    padding-left: 1.15rem;
+  }
+
+  #notice .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  #notice .tags li {
+    padding: 0.1rem 0.5rem;
+    border: 2px solid rgba(111, 214, 255, 0.4);
+    border-radius: 999px;
+    color: var(--ice);
+    font-size: 0.78rem;
+  }
+
+  #notice .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+    font-weight: 600;
+  }
+
+  #notice .contact {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  #notice .contact li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0.35rem 0;
+  }
+
+  #notice .label {
+    font-family: var(--font-display);
+    color: var(--ice);
+  }
+
+  #notice .awards {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  #notice .awards li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.75rem;
+    margin: 0.45rem 0;
+  }
+
+  #notice .date {
+    font-family: var(--font-display);
+    color: var(--glow-cyan);
+    white-space: nowrap;
+  }
+
+  .dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+  }
+
+  /* .gd-btn sets display:inline-block, which would otherwise show a hidden button. */
+  #notice [hidden] {
+    display: none !important;
+  }
+
+  .dialog-actions .gd-btn {
+    margin-top: 0;
+  }
+</style>
