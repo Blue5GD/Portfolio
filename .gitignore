@@ -22,3 +22,6 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# original song files (renamed copies live in public/audio/)
+docs/plan-assets/*.mp3

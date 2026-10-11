@@ -3,7 +3,7 @@ name: Portfolio Astro Plan
 overview: A dual-mode Astro portfolio for Micah Winesberry (Blue5GD), built in the existing Portfolio repo -- a classic scrollable portfolio plus a Geometry Dash-style platformer where the player controls a custom cube with the arrow keys to unlock sections. All content facts, design specs, game mechanics, and file structure are defined here so a builder can start immediately.
 todos:
   - id: setup
-    content: In the existing /home/micah/Documents/VScode/Portfolio repo, run npm install, add the two fontsource packages, copy the resume PDF and avatar reference from docs/plan-assets/ into the project, and replace the placeholder index page
+    content: In the existing /home/micah/Documents/VScode/Portfolio repo, run npm install, add the two fontsource packages, copy the phone-redacted resume PDF and avatar reference from docs/plan-assets/ into the project, and replace the placeholder index page
     status: pending
   - id: content-data
     content: Write src/data/*.ts from the Content section (the fact bank), choosing only the most impactful facts, newest first in every list except Featured
@@ -21,7 +21,7 @@ todos:
     content: Author the 6 named ASCII tile levels (First Level, Lost World, Mystic Mountains, Sci-Fi Showdown, Last Hope, The Final Battle) mapped to sections, themed and paced to their songs, with info blocks, end portals, localStorage progress, skip button, and level select with difficulty faces
     status: pending
   - id: game-audio
-    content: "Build audio.ts: one looping track per level, keeps playing through deaths, stops on pause/mute/leaving to classic, mute saved in localStorage, game stays silent if a file is missing, Credits panel"
+    content: "Copy and rename the 6 songs from docs/plan-assets/ into public/audio/, then build audio.ts: one looping track per level, keeps playing through deaths, stops on pause/mute/leaving to classic, mute saved in localStorage, game stays silent if a file is missing, Credits panel"
     status: pending
   - id: polish-a11y
     content: Add particles, attempt counter, touch controls, reduced-motion support, mobile default to classic, SEO meta/OG image, favicon
@@ -61,19 +61,22 @@ isProject: false
 - Email: `micah.winesberry@yale.edu`
 - GitHub: `https://github.com/Blue5GD`
 - LinkedIn: `https://www.linkedin.com/in/mwinesberry/`
-- Resume: copy `Portfolio/docs/plan-assets/Micah-Winesberry-Resume.pdf` to `public/Micah-Winesberry-Resume.pdf`. Link it with the base path.
+- Resume: copy `Portfolio/docs/plan-assets/Micah-Winesberry-Resume.pdf` to `public/Micah-Winesberry-Resume.pdf`. Link it with the base path. This PDF is the phone-redacted version (it shows `504-XXX-XXXX`). Never add an unredacted resume to the repo.
 - Don't show the phone number anywhere on the site's pages.
 
-## 2. Visual design (from the user's avatar)
+## 2. Visual design (from the user's avatar and GD icon)
 
-Avatar reference: `Portfolio/docs/plan-assets/avatar-reference.png`. Copy it to `src/assets/avatar-reference.png`. Use it for the About photo slot and the OG image. Do not use it as the game sprite.
+Avatar reference: `Portfolio/docs/plan-assets/avatar-reference.png`. Copy it to `src/assets/avatar-reference.png`. Use it for the About photo slot and the OG image, and as the source of the site's palette and atmosphere. Do not use it as the game sprite.
 
-**The cube (player character)** -- recreate it as a hand-drawn SVG at `src/assets/cube.svg`, and as a matching Canvas draw function in `src/game/drawCube.ts`:
-- Square face with slightly rounded corners, thick dark navy outline (`#141a4a`)
-- Fill: very pale icy blue (`#e6f6ff`), shading to light cyan (`#a9e4ff`) near the bottom
-- Two round eyes near the top: white with cyan rims (`#5fc8ff`) and small cyan pupils
-- A wide, open grinning mouth across the lower half: cyan-blue interior (`#3aa8e8`), with a row of sharp white triangular teeth on top and a smaller row on the bottom, outlined in navy
-- Soft cyan outer glow (canvas `shadowBlur` / SVG filter)
+GD icon reference: `Portfolio/docs/plan-assets/gd-icon.png` (114x119). This is the user's actual Geometry Dash cube, and it is the source of truth for the player character. The orange-brown background in the PNG is not part of the icon. Don't ship the PNG itself; recreate it as vector art.
+
+**The cube (player character)** -- recreate `gd-icon.png` as a hand-drawn SVG at `src/assets/cube.svg`, and as a matching Canvas draw function in `src/game/drawCube.ts`. Match the icon's proportions:
+- Square face, pure white fill (`#ffffff`), with a thick black outline (`#000000`) and slightly rounded outer corners
+- Two round eyes in the upper third, near the left and right edges: solid light blue (`#75bcff`) with thick black rims, no pupils
+- A wide D-shaped open mouth filling most of the lower two thirds: a flat top edge and a rounded bottom, black outline, dark slate blue interior (`#3a5976`)
+- Four sharp light-blue (`#75bcff`) triangular teeth hanging down from the top edge of the mouth, each outlined in black. No bottom teeth.
+- A light-blue (`#75bcff`) oval tongue at the bottom of the mouth, outlined in black
+- Soft cyan outer glow (`--glow-cyan`, via canvas `shadowBlur` / SVG filter) so it pops on the dark background
 - Only the cube gets drawn as the character. No ship, no wave, no other gamemodes.
 
 **Palette (CSS custom properties in `src/styles/global.css`):**
@@ -234,7 +237,7 @@ This is GD-styled **platformer mode**, not an auto-runner. The player directly c
 
 ### 5.5 Levels (6, in difficulty order)
 
-Difficulty climbs steadily. **Each level's layout, pacing, colors, and particle effects must match the vibe of its song.** Calm parts of a song get open, breathable sections. Build-ups get denser obstacles. Drops get the hardest sequences. Song files aren't available yet, so design for each song's general energy (described below). Once the user adds the files, the builder should listen and fine-tune the timing. The difficulty face is drawn on the level-select card and in the pause menu. Use original, simple drawings in the style of GD's difficulty faces, not copied assets. Info blocks inside each level follow the newest-first order from section 4.
+Difficulty climbs steadily. **Each level's layout, pacing, colors, and particle effects must match the vibe of its song.** Calm parts of a song get open, breathable sections. Build-ups get denser obstacles. Drops get the hardest sequences. All six song files are in `docs/plan-assets/` (see section 5.6), so build each level with its song playing and fine-tune the layout to the music's structure and timing. The difficulty face is drawn on the level-select card and in the pause menu. Use original, simple drawings in the style of GD's difficulty faces, not copied assets. Info blocks inside each level follow the newest-first order from section 4.
 
 1. **"First Level"** -- Normal face -- song: *Race Around the World* by Waterflame -- section: **About + Featured**
    - Vibe: upbeat, bright, friendly. A tutorial.
@@ -277,13 +280,14 @@ Because levels 4 to 6 are hard, the "Skip level" button (section 5.7) is require
 
 ### 5.6 Audio
 
-- One track per level, loaded from `public/audio/` (URL built with the base path). Use these exact filenames, and the user will drop the files in later:
-  - `01-race-around-the-world.mp3`
-  - `02-another-world.mp3`
-  - `03-the-falling-mysts.mp3`
-  - `04-at-the-speed-of-light.mp3`
-  - `05-figures.mp3`
-  - `06-battle-against-a-true-hero.mp3`
+- One track per level, loaded from `public/audio/` (URL built with the base path). The user has provided all six songs in `docs/plan-assets/`. Copy them into `public/audio/` under these exact filenames (source file on the left, site filename on the right):
+  - `RaceAroundTheWorld.mp3` -> `01-race-around-the-world.mp3`
+  - `AnotherWorld.mp3` -> `02-another-world.mp3`
+  - `TheFallingMysts.mp3` -> `03-the-falling-mysts.mp3`
+  - `AtTheSpeedOfLight.mp3` -> `04-at-the-speed-of-light.mp3`
+  - `NKFigures.mp3` -> `05-figures.mp3`
+  - `BattleAgainstATrueHero.mp3` -> `06-battle-against-a-true-hero.mp3`
+- Commit the copies in `public/audio/` only. Don't commit the originals in `docs/plan-assets/`, so the large mp3s aren't stored twice.
 - Implement this in `src/game/audio.ts` with one `HTMLAudioElement` per level (`preload="none"`, `loop = true`, default volume 0.6). Start loading only when the player enters a level.
 - Playback rules:
   - Starts when the player enters a level, after a user gesture (browsers block autoplay until the user clicks or presses a key, so start on the level-select click or the first key press).
@@ -294,7 +298,7 @@ Because levels 4 to 6 are hard, the "Skip level" button (section 5.7) is require
   - On level complete or level change, stop the current track and start the next level's track from the beginning.
   - The level-select screen is silent.
 - Mute toggle: a speaker button in the HUD and level select, plus the `M` key. Save the choice in `localStorage` key `b5gd:muted`.
-- **If a file is missing or fails to load, the game runs silently.** Catch the error and show no error to the player, so the site works before the files exist.
+- **If a file is missing or fails to load, the game runs silently.** Catch the error and show no error to the player, so a bad network or a removed track never breaks the game.
 - **Credits:** add a "Music Credits" panel (linked from level select and the `/play` footer) that lists each song, its artist, and a link to its source. Add a matching "Music" section to `README.md` that says the user is responsible for getting permission or confirming each artist's usage terms before deploying publicly.
 
 ### 5.7 Game feel and UI
@@ -340,11 +344,13 @@ Portfolio/
   docs/
     PLAN.md                (this plan)
     plan-assets/
-      Micah-Winesberry-Resume.pdf
+      Micah-Winesberry-Resume.pdf   (phone-redacted)
       avatar-reference.png
+      gd-icon.png                   (the user's GD cube; source for cube.svg)
+      *.mp3                         (6 original song files; not committed)
   public/
     Micah-Winesberry-Resume.pdf
-    audio/                 (6 level mp3s, added by the user later)
+    audio/                 (6 level mp3s, copied and renamed from docs/plan-assets/)
     favicon.svg            (the cube; replace the Astro default and delete favicon.ico)
     og-image.png           (made from the avatar reference, 1200x630)
   src/
@@ -377,10 +383,10 @@ Portfolio/
 1. In `/home/micah/Documents/VScode/Portfolio`: `npm install`, then `npm install @fontsource/lilita-one @fontsource/inter`.
 2. Copy `docs/plan-assets/Micah-Winesberry-Resume.pdf` to `public/` and `docs/plan-assets/avatar-reference.png` to `src/assets/`.
 3. Write the `src/data/*.ts` files from section 4 using typed exports (`Project`, `ExperienceItem`, `Award`, and so on in `src/data/types.ts`). Apply the content restraint and newest-first rules.
-4. Build the theme, layout, Nav and mode toggle, and the cube SVG. Check that the cube matches the avatar description.
+4. Build the theme, layout, Nav and mode toggle, and the cube SVG. Check that the cube matches `gd-icon.png` side by side.
 5. Build classic mode in the section order.
 6. Build the game engine, then level 1 alone. Tune the physics until it feels good, then author levels 2 to 6 with their themes, getting harder in order.
-7. Build the audio system and the Music Credits panel. Test with the audio files missing (the game must stay silent with no errors).
+7. Copy and rename the songs into `public/audio/` (section 5.6), then build the audio system and the Music Credits panel. Also test with one file temporarily renamed (the game must stay silent with no errors).
 8. Polish: particles, attempt counter, touch controls, reduced motion, SEO/OG meta, favicon.
 9. Verify:
    - `npx astro check` and `npm run build` pass with no errors.
@@ -399,6 +405,8 @@ Portfolio/
 - Every other list is newest first.
 - Section 4 is a fact bank. Show only what conveys impact or is necessary. Don't cram.
 - Platformer mode with manual control. Only the cube gamemode. The avatar's ship and background are not playable.
+- The player cube is recreated from `docs/plan-assets/gd-icon.png` (the user's real GD icon), not from the avatar.
+- The resume in the repo is the phone-redacted version. The six songs are provided in `docs/plan-assets/`.
 - Classic is the default route. The game is opt-in at `/play` and always skippable.
 - About uses placeholder copy until the user writes it.
 - Level names, difficulty faces, songs, and sections are fixed as listed in section 5.5. Levels must match their song's vibe. Level 6 is dark and the hardest.
