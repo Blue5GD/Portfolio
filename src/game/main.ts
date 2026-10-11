@@ -7,7 +7,16 @@ import { startLoop } from "./loop";
 import { fillCredits, fillPanel, readContent } from "./panels";
 import { createGame, step } from "./physics";
 import { render } from "./render";
-import { loadMuted, loadProgress, markCleared, saveMuted, saveProgress, type Progress } from "./storage";
+import {
+  loadMuted,
+  loadProgress,
+  loadVolume,
+  markCleared,
+  saveMuted,
+  saveProgress,
+  saveVolume,
+  type Progress,
+} from "./storage";
 import type { ContentRef, GameState } from "./types";
 
 // Front door for /play.
@@ -22,7 +31,7 @@ import type { ContentRef, GameState } from "./types";
 //   levels.ts     the six courses; only First Level has a map
 //   panels.ts     turns an info block into the dialog, using src/data
 //   audio.ts      one looping song per level
-//   storage.ts    saved unlocks, clears, attempts, and mute
+//   storage.ts    saved unlocks, clears, attempts, mute, and volume
 //   faces.ts      difficulty faces on the cards and the pause screen
 //   render.ts     draws the map, the cube, and the progress bar
 
@@ -46,6 +55,9 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   const muteButtons = [
     ...document.querySelectorAll<HTMLButtonElement>("[data-mute]"),
   ];
+  const volumeInputs = [
+    ...document.querySelectorAll<HTMLInputElement>("[data-volume]"),
+  ];
   const content = readContent();
 
   if (
@@ -65,7 +77,8 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     !resetBtn ||
     !creditsBtn ||
     !status ||
-    muteButtons.length === 0
+    muteButtons.length === 0 ||
+    volumeInputs.length === 0
   ) {
     throw new Error("Play page is missing the level select, canvas, or dialog.");
   }
@@ -90,9 +103,11 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   let stopLoop: (() => void) | null = null;
   let progress: Progress = loadProgress(courses.length);
   let muted = loadMuted();
+  let volume = loadVolume();
   const music = createMusic(
     courses.map((course) => course.audio),
     muted,
+    volume,
   );
 
   const { input, detach } = attachInput(() => dialog.open || !playing, toggleMute);
@@ -183,6 +198,25 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
       button.setAttribute("aria-pressed", muted ? "true" : "false");
       button.setAttribute("aria-label", muted ? "Unmute. Music is remembered off." : "Mute. Music is remembered on.");
     }
+  }
+
+  function syncVolume(except?: HTMLInputElement) {
+    const percent = String(Math.round(volume * 100));
+    for (const input of volumeInputs) {
+      if (input === except) continue;
+      input.value = percent;
+    }
+  }
+
+  function onVolumeInput(event: Event) {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    const percent = Number(input.value);
+    if (!Number.isFinite(percent)) return;
+    volume = Math.min(1, Math.max(0, percent / 100));
+    saveVolume(volume);
+    music.setVolume(volume);
+    syncVolume(input);
   }
 
   function renderCards() {
@@ -303,7 +337,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
       });
     };
     next.onWin = () => {
-      music.stop();
+      // The clear panel stays on this song. showSelect() stops it when they leave.
       markCleared(progress, index, courses.length);
       saveProgress(progress);
       const following = courses[index + 1];
@@ -345,8 +379,14 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
       },
       () => {
         if (!state) return;
-        // Dead still counts as playing, so a crash never interrupts the song.
-        music.setActive(state.phase === "play" || state.phase === "dead");
+        // Crashes, info panels, and the clear panel keep the song going.
+        // The pause menu is the one that waits.
+        const hearing =
+          state.phase === "play" ||
+          state.phase === "dead" ||
+          state.phase === "won" ||
+          (state.phase === "paused" && state.pauseReason === "dialog");
+        music.setActive(hearing);
         render(context, state);
         syncStatus();
       },
@@ -385,6 +425,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   });
   skipBtn.addEventListener("click", skipLevel);
   for (const button of muteButtons) button.addEventListener("click", toggleMute);
+  for (const input of volumeInputs) input.addEventListener("input", onVolumeInput);
   creditsBtn.addEventListener("click", () => {
     if (dialog.open) return;
     fillCredits(dialogTitle, dialogBody, courses);
@@ -451,6 +492,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   }
 
   syncMute();
+  syncVolume();
   renderCards();
 
   function cleanup() {

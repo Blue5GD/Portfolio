@@ -1,12 +1,16 @@
-// Two browser-saved settings. Both stay on this computer only.
+// Browser-saved settings. They stay on this computer only.
 // localStorage is a small key/value store the page can read after a refresh.
 //
 // "b5gd:progress" remembers how far the game has been cleared.
 // "b5gd:muted" remembers the speaker button, so a muted visitor stays muted
 // after a refresh.
+// "b5gd:volume" remembers the volume slider, from 0 (silent) to 1 (full).
+// A missing or broken value falls back to 0.6.
 
 const PROGRESS_KEY = "b5gd:progress";
 const MUTE_KEY = "b5gd:muted";
+const VOLUME_KEY = "b5gd:volume";
+const DEFAULT_VOLUME = 0.6;
 
 export interface Progress {
   /** How many levels from the start can be entered. 1 means only First Level. */
@@ -82,5 +86,26 @@ export function saveMuted(muted: boolean): void {
     localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
   } catch {
     // Ignore. The button still toggles for this visit.
+  }
+}
+
+export function loadVolume(): number {
+  try {
+    const raw = localStorage.getItem(VOLUME_KEY);
+    if (raw === null) return DEFAULT_VOLUME;
+    const value = Number(raw);
+    if (!Number.isFinite(value)) return DEFAULT_VOLUME;
+    return Math.min(1, Math.max(0, value));
+  } catch {
+    return DEFAULT_VOLUME;
+  }
+}
+
+export function saveVolume(volume: number): void {
+  const value = Math.min(1, Math.max(0, volume));
+  try {
+    localStorage.setItem(VOLUME_KEY, String(value));
+  } catch {
+    // Ignore. The slider still changes the loudness for this visit.
   }
 }

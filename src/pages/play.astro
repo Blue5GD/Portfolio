@@ -56,6 +56,10 @@ const gameContent = {
         <div id="level-cards" class="cards"></div>
         <p id="attempt-total" class="attempts" aria-live="polite"></p>
         <div class="select-actions">
+          <label class="volume">
+            Volume
+            <input type="range" min="0" max="100" step="1" value="60" data-volume aria-label="Music volume" />
+          </label>
           <button id="mute-select" class="gd-btn gd-btn--alt" type="button" data-mute aria-pressed="false">Mute</button>
           <button id="credits-btn" class="gd-btn gd-btn--alt" type="button">Music credits</button>
           <button id="reset-progress" class="gd-btn gd-btn--alt" type="button">Reset progress</button>
@@ -73,8 +77,12 @@ const gameContent = {
         aria-label="First Level. Arrow keys or W A S D to move and jump. R restarts at the last checkpoint. Escape pauses."
       ></canvas>
       <p id="game-status" class="sr-only" aria-live="polite"></p>
-      <p class="help">Arrows or WASD, hold jump. R restarts. Esc pauses. M mutes.</p>
+      <p class="help">Arrows or WASD, hold jump. R restarts. Esc pauses. M mutes. The slider sets volume.</p>
       <div class="hud-actions">
+        <label class="volume">
+          Volume
+          <input type="range" min="0" max="100" step="1" value="60" data-volume aria-label="Music volume" />
+        </label>
         <button id="mute-hud" class="gd-btn gd-btn--alt" type="button" data-mute aria-pressed="false">Mute</button>
         <button id="skip-btn" class="gd-btn gd-btn--alt" type="button">Skip level</button>
         <button id="pause-btn" class="gd-btn gd-btn--alt" type="button">Pause</button>
@@ -168,6 +176,7 @@ const gameContent = {
   .select-actions {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 0.5rem;
   }
 
@@ -192,7 +201,7 @@ const gameContent = {
     top: 4.15rem;
     z-index: 2;
     margin: 0;
-    max-width: min(28rem, calc(100% - 9.5rem));
+    max-width: min(28rem, calc(100% - 12.5rem));
     color: var(--ice);
     font-size: 0.8rem;
     text-shadow:
@@ -215,8 +224,38 @@ const gameContent = {
   @media (min-width: 900px) {
     .hud-actions {
       flex-direction: row;
-      max-width: min(22rem, calc(100% - 1.4rem));
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      max-width: min(40rem, calc(100% - 1.4rem));
     }
+  }
+
+  .volume {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--ice);
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+  }
+
+  .volume input[type="range"] {
+    width: 7rem;
+    accent-color: var(--glow-cyan);
+    cursor: pointer;
+  }
+
+  /* In the corner HUD the label sits above the slider, so it stays
+     narrower than the progress bar's reserved space. */
+  .hud-actions .volume {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.1rem;
+    font-size: 0.85rem;
+  }
+
+  .hud-actions .volume input[type="range"] {
+    width: 6.2rem;
   }
 
   .sr-only {

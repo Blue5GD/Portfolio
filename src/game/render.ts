@@ -252,9 +252,9 @@ function drawAttempt(ctx: CanvasRenderingContext2D, state: GameState): void {
 function drawHud(ctx: CanvasRenderingContext2D, state: GameState): void {
   const barX = 16;
   const barY = 14;
-  // Leave the top-right clear for Mute, Skip, and Pause.
-  // Narrow screens stack those buttons, so they need less horizontal room.
-  const reserve = state.viewW < 900 ? 150 : 340;
+  // Leave the top-right clear for the volume slider, Mute, Skip, and Pause.
+  // Narrow screens stack them, so they need less horizontal room.
+  const reserve = state.viewW < 900 ? 150 : 410;
   const barW = Math.max(48, state.viewW - reserve);
   const progress = (state.player.x + state.player.w / 2) / (state.level.width * TILE);
 

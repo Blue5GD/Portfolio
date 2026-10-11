@@ -21,7 +21,7 @@ todos:
     content: Author the 6 named ASCII tile levels (First Level, Lost World, Mystic Mountains, Sci-Fi Showdown, Last Hope, The Final Battle) mapped to sections, themed and paced to their songs, with info blocks, end portals, localStorage progress, skip button, and level select with difficulty faces
     status: pending
   - id: game-audio
-    content: "Copy and rename the 6 songs from docs/plan-assets/ into public/audio/, then build audio.ts: one looping track per level, keeps playing through deaths, stops on pause/mute/leaving to classic, mute saved in localStorage, game stays silent if a file is missing, Credits panel"
+    content: "Copy and rename the 6 songs from docs/plan-assets/ into public/audio/, then build audio.ts: one looping track per level, keeps playing through deaths, info panels, and the level-clear dialog, pauses on the pause menu, stops on mute or leaving to classic, mute and volume saved in localStorage, game stays silent if a file is missing, Credits panel"
     status: pending
   - id: polish-a11y
     content: Add particles, attempt counter, touch controls, reduced-motion support, mobile default to classic, SEO meta/OG image, favicon
@@ -306,12 +306,14 @@ Because levels 4 to 6 are hard, the "Skip level" button (section 5.7) is require
 - Playback rules:
   - Starts when the player enters a level, after a user gesture (browsers block autoplay until the user clicks or presses a key, so start on the level-select click or the first key press).
   - **Does not stop or restart when the cube dies.** Death and respawn leave the music playing exactly where it was.
+  - **Does not stop** when an info panel opens, or when the level-clear dialog is showing. The cube freezes; the song keeps going.
   - **Loops** automatically when the track ends.
-  - **Pauses** when the game is paused (Esc/P, or a content panel opens), and resumes from the same spot on unpause.
-  - **Stops** when the user mutes it, switches to Classic mode, or leaves the page. Stop on `pagehide`, and pause on `visibilitychange` when the tab is hidden.
-  - On level complete or level change, stop the current track and start the next level's track from the beginning.
+  - **Pauses** when the game is paused with Esc or P, and resumes from the same spot on unpause.
+  - **Stops** when the user mutes it, returns to the level select, switches to Classic mode, or leaves the page. Stop on `pagehide`, and pause on `visibilitychange` when the tab is hidden.
+  - On level change, stop the current track and start the next level's track from the beginning. Finishing a level does not stop its song; the clear dialog keeps it going until the player goes back to the level select.
   - The level-select screen is silent.
 - Mute toggle: a speaker button in the HUD and level select, plus the `M` key. Save the choice in `localStorage` key `b5gd:muted`.
+- Volume slider: in the HUD and on the level select. Default 0.6. Save the choice in `localStorage` key `b5gd:volume` as a number from 0 to 1.
 - **If a file is missing or fails to load, the game runs silently.** Catch the error and show no error to the player, so a bad network or a removed track never breaks the game.
 - **Credits:** add a "Music Credits" panel (linked from level select and the `/play` footer) that lists each song, its artist, and a link to its source. Add a matching "Music" section to `README.md` that says the user is responsible for getting permission or confirming each artist's usage terms before deploying publicly.
 
@@ -320,7 +322,7 @@ Because levels 4 to 6 are hard, the "Skip level" button (section 5.7) is require
 - Death: the cube shatters into square particles, a short screen shake (skipped under reduced motion), then respawn at the last checkpoint after 400 ms. Music keeps playing. A GD-style "Attempt N" label is drawn in the world near the spawn point.
 - HUD: a level progress bar at the top (percent of level width), a pause button, a mute button, and a "Skip level" button. Skipping unlocks the level and opens all its panels in sequence, so nobody gets stuck.
 - Level select screen: GD-style cards with the level name, difficulty face, difficulty label (Normal, Hard, Harder, Insane, Hard Demon, Extreme Demon), song and artist, section, and "Cleared" state.
-- Content panels are HTML `<dialog>` elements over the canvas (accessible, selectable text). The game and the music pause while a panel is open. Close with Esc, Enter, or a button.
+- Content panels are HTML `<dialog>` elements over the canvas (accessible, selectable text). The game pauses while a panel is open. The music keeps playing. Close with Esc, Enter, or a button.
 - Background: parallax layers styled by each level's `theme` (gradient, translucent triangles, theme particles). Default block tiles: dark navy with a cyan glowing outline, like a GD block.
 - Darkness: levels 5 and 6 draw a full-screen dark overlay. Level 5's overlay gets stronger with progress. Level 6 cuts a radial light hole around the cube (using `globalCompositeOperation` or a radial gradient).
 - Progress is stored in `localStorage` key `b5gd:progress` = `{ unlocked: number, cleared: number[], attempts: number }`. Level select has a "Reset progress" button.
@@ -340,7 +342,6 @@ flowchart TD
   Panels --> Data["src/data content"]
   Main --> Storage["storage.ts localStorage"]
   Main --> Audio["audio.ts looping level tracks"]
-  Panels -->|"pause and resume"| Audio
 ```
 
 Content gets into the game like this: `play.astro` serializes the needed `src/data` content into a `<script type="application/json" id="game-content">` block at build time. Then `panels.ts` reads it. The id is `game-content`, not `content`, because `BaseLayout` already uses `id="content"` for the page body. That way content is never duplicated.
@@ -406,7 +407,7 @@ Portfolio/
    - `npx astro check` and `npm run build` pass with no errors.
    - `npm run preview` works under `/Portfolio/`, with no broken links or assets.
    - Every level is beatable, and the skip button works.
-   - Audio: keeps playing through death, loops, pauses with the game and panels, stops on mute or when switching to Classic, and the mute setting persists.
+   - Audio: keeps playing through death, info panels, and the level-clear dialog, pauses on the pause menu, stops on mute or when leaving the level, and the mute and volume settings persist.
    - Classic mode works at 375px, 768px, and 1440px.
    - Keyboard navigation works and dialogs are accessible.
    - Lighthouse scores 90+ for performance and accessibility on the classic page.

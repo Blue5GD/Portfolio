@@ -1,32 +1,37 @@
 // One looping song per level, played with plain <audio> elements.
 //
-// main.ts only says three things: which level is on (`start`), whether the
-// cube is actually being played right now (`setActive`), and whether the
-// speaker is muted (`setMuted`). This file turns those into play() and pause()
-// calls, and only when the answer changes, not on every frame.
+// main.ts says four things: which level is on (`start`), whether the song
+// should be heard right now (`setActive`), whether the speaker is muted
+// (`setMuted`), and how loud it is (`setVolume`). This file turns those into
+// play() and pause() calls. Those run only when the answer changes, not on every frame.
 //
-// Deaths keep `active` true, so the song never restarts when you crash.
-// A pause or an open panel sets it false, and the song waits where it was.
+// Deaths, info panels, and the level-clear panel keep `active` true, so the
+// song never restarts for those. The pause menu sets it false, and the song
+// waits where it was. Leaving for the level select calls `stop`.
 //
 // Browsers refuse to start sound until the visitor clicks or presses a key.
 // If play() is refused, we try again on the next click or key press.
 // If a file is missing or will not decode, that track is skipped quietly
 // and the game keeps running without it.
 
-const VOLUME = 0.6;
-
 export interface Music {
   /** Start this level's song from the beginning. Stops any other song. */
   start(index: number): void;
-  /** Stop and rewind. Used on level clear, on leaving to the level select, and on page exit. */
+  /** Stop and rewind. Used when leaving for the level select, and on page exit. */
   stop(): void;
-  /** True while the cube is being played (not paused, no panel open). */
+  /**
+   * True while this level's song should be heard.
+   * That includes play, death, an info panel, and the level-clear panel.
+   * False for the pause menu.
+   */
   setActive(active: boolean): void;
   setMuted(muted: boolean): void;
+  /** Loudness from 0 (silent) to 1 (full). Does not mute or unmute. */
+  setVolume(volume: number): void;
   destroy(): void;
 }
 
-export function createMusic(files: string[], startMuted: boolean): Music {
+export function createMusic(files: string[], startMuted: boolean, startVolume: number): Music {
   const base = import.meta.env.BASE_URL;
   const tracks: (HTMLAudioElement | null)[] = files.map(() => null);
   const broken = new Set<number>();
@@ -36,6 +41,13 @@ export function createMusic(files: string[], startMuted: boolean): Music {
   /** play() was refused for lack of a click or key press. */
   let waitingForGesture = false;
 
+  function clampVolume(value: number): number {
+    if (!Number.isFinite(value)) return 0.6;
+    return Math.min(1, Math.max(0, value));
+  }
+
+  let volume = clampVolume(startVolume);
+
   function track(index: number): HTMLAudioElement | null {
     if (broken.has(index) || !files[index]) return null;
     let el = tracks[index];
@@ -44,7 +56,7 @@ export function createMusic(files: string[], startMuted: boolean): Music {
       el = new Audio();
       el.preload = "none";
       el.loop = true;
-      el.volume = VOLUME;
+      el.volume = volume;
       el.addEventListener("error", () => markBroken(index));
       el.src = `${base}audio/${files[index]}`;
       tracks[index] = el;
@@ -120,6 +132,12 @@ export function createMusic(files: string[], startMuted: boolean): Music {
     setMuted(next) {
       muted = next;
       apply();
+    },
+    setVolume(next) {
+      volume = clampVolume(next);
+      for (const el of tracks) {
+        if (el) el.volume = volume;
+      }
     },
     destroy() {
       stop();

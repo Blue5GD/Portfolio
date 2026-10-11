@@ -21,7 +21,7 @@ All of the text lives in `src/data/`. Classic mode and the game both read those 
 
 ## Edit the levels
 
-`/play` opens a level select. Clearing or skipping a level unlocks the next one. That progress is saved in the browser under the key `b5gd:progress`. The mute button is saved under `b5gd:muted`.
+`/play` opens a level select. Clearing or skipping a level unlocks the next one. That progress is saved in the browser under the key `b5gd:progress`. The mute button is saved under `b5gd:muted`. The volume slider is saved under `b5gd:volume`.
 
 First Level, in `src/game/levels.ts`, is the course you can play. The other five cards are listed there too, without maps yet. Each string in `rows` is one row of the map. Row 0 is the top. Every row in a level must be the same length.
 
@@ -37,7 +37,7 @@ Warmup is still in `src/game/levels.ts`, but it is not on the level select. It i
 
 ## Music
 
-Each level plays one looping song from `public/audio/`. The file name, artist, and source link for each song are on its course in `src/game/levels.ts`, and the "Music credits" button on the level select lists them. `src/game/audio.ts` plays them: the song keeps going when you crash, pauses with the game or an open panel, and stops when you leave the level. If a file is missing, that level runs silently.
+Each level plays one looping song from `public/audio/`. The file name, artist, and source link for each song are on its course in `src/game/levels.ts`, and the "Music credits" button on the level select lists them. `src/game/audio.ts` plays them: the song keeps going when you crash, when an info panel opens, and while the level-clear panel is up. It pauses if you open the pause menu, and it stops when you leave the level. The Volume slider on the level select and in the game sets how loud it is. If a file is missing, that level runs silently.
 
 The original downloads sit in `docs/plan-assets/` and are ignored by git, so only the renamed copies in `public/audio/` get committed.
 
