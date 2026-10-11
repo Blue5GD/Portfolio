@@ -1,15 +1,93 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { identity } from "../data/identity";
+import { about } from "../data/about";
+import { featured } from "../data/featured";
+import { projects } from "../data/projects";
+import { experience } from "../data/experience";
+import { awards } from "../data/awards";
+import { skills } from "../data/skills";
+import { education } from "../data/education";
 
 const base = import.meta.env.BASE_URL;
 ---
 
 <BaseLayout>
   <main class="skeleton">
-    <h1 class="wordmark">Blue5GD</h1>
-    <p>Micah Winesberry</p>
-    <p class="muted">Site under construction. Body text is Inter, headings are Lilita One.</p>
-    <a href={`${base}Micah-Winesberry-Resume.pdf`}>Resume (PDF)</a>
+    <h1 class="wordmark">{identity.brand}</h1>
+    <p>{identity.name} · {identity.tagline}</p>
+    <a href={`${base}${identity.resumeFile}`}>Resume (PDF)</a>
+
+    <!-- TEMPORARY: plain dump of src/data so content can be reviewed. Replaced in M3/M4. -->
+    <section class="debug">
+      <h2>About</h2>
+      {about.paragraphs.map((p) => <p>{p}</p>)}
+
+      <h2>Featured</h2>
+      <ol>
+        {featured.map((f) => (
+          <li>
+            <strong>{f.title}</strong>: {f.blurb} {f.href && <a href={f.href}>link</a>}
+          </li>
+        ))}
+      </ol>
+
+      <h2>Projects</h2>
+      {projects.map((p) => (
+        <article>
+          <h3>{p.title} <small>({p.difficulty}) · {p.dates}</small></h3>
+          <p>{p.summary}</p>
+          <ul>{p.bullets.map((b) => <li>{b}</li>)}</ul>
+          <p class="muted">{p.tags.join(" · ")}</p>
+          <p>{p.links.map((l) => <a href={l.href}>{l.label} </a>)}</p>
+        </article>
+      ))}
+
+      <h2>Experience</h2>
+      {experience.map((group) => (
+        <div>
+          <h3>{group.heading}</h3>
+          {group.items.map((item) => (
+            <div>
+              <strong>{item.role}, {item.org}</strong> <small>{item.dates}</small>
+              <ul>{item.bullets.map((b) => <li>{b}</li>)}</ul>
+            </div>
+          ))}
+          {group.footnote && <p class="muted">{group.footnote}</p>}
+        </div>
+      ))}
+
+      <h2>Awards</h2>
+      <ul>
+        {awards.map((a) => (
+          <li>{a.year}: {a.title}{a.detail && ` (${a.detail})`}</li>
+        ))}
+      </ul>
+
+      <h2>Skills</h2>
+      <ul>
+        {skills.map((g) => (
+          <li><strong>{g.name}:</strong> {g.skills.join(", ")}</li>
+        ))}
+      </ul>
+
+      <h2>Education</h2>
+      <ul>
+        {education.map((e) => (
+          <li>
+            <strong>{e.school}</strong>, {e.location}. {e.degree} {e.dates}
+            {e.details && <div class="muted">{e.details}</div>}
+          </li>
+        ))}
+      </ul>
+
+      <h2>Contact</h2>
+      <p>
+        <a href={`mailto:${identity.email}`}>{identity.email}</a> ·
+        <a href={identity.github}>GitHub</a> ·
+        <a href={identity.linkedin}>LinkedIn</a>
+      </p>
+    </section>
   </main>
 </BaseLayout>
 
@@ -19,10 +97,21 @@ const base = import.meta.env.BASE_URL;
     max-width: var(--content-width);
     margin: 0 auto;
     padding: 6rem 1.5rem;
-    text-align: center;
   }
   .skeleton h1 {
     font-size: clamp(3rem, 10vw, 6rem);
+    text-align: center;
+  }
+  .skeleton > p,
+  .skeleton > a {
+    display: block;
+    text-align: center;
+  }
+  .debug {
+    margin-top: 4rem;
+    padding: 2rem;
+    border: 2px dashed var(--text-muted);
+    border-radius: var(--radius);
   }
   .muted {
     color: var(--text-muted);
