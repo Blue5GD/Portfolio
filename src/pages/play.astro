@@ -148,82 +148,11 @@ const gameContent = {
 
   .cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(16.5rem, 1fr));
+    /* min() lets one card shrink below 16.5rem on a phone instead of overflowing. */
+    grid-template-columns: repeat(auto-fill, minmax(min(16.5rem, 100%), 1fr));
     gap: 1rem;
   }
 
-  .card {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    padding: 0.9rem 0.95rem 1rem;
-    background: linear-gradient(180deg, rgba(16, 22, 84, 0.94), rgba(7, 10, 43, 0.96));
-    border: 3px solid #000;
-    border-radius: 16px;
-    box-shadow:
-      0 0 0 2px rgba(111, 214, 255, 0.28),
-      0 6px 0 #000;
-  }
-
-  .card[data-state="locked"] {
-    opacity: 0.55;
-  }
-
-  .card[data-state="cleared"] {
-    box-shadow:
-      0 0 0 2px rgba(255, 159, 191, 0.55),
-      0 6px 0 #000;
-  }
-
-  .card h2 {
-    margin: 0.35rem 0 0;
-    font-size: 1.45rem;
-  }
-
-  .card p {
-    margin: 0;
-  }
-
-  .face {
-    width: 96px;
-    height: 96px;
-    object-fit: contain;
-  }
-
-  .diff {
-    font-family: var(--font-display);
-    color: var(--ice);
-    font-size: 1.05rem;
-  }
-
-  .song,
-  .section {
-    color: var(--text-muted);
-    font-size: 0.92rem;
-  }
-
-  .badge {
-    margin-top: 0.35rem;
-    font-family: var(--font-display);
-    letter-spacing: 0.02em;
-  }
-
-  .card[data-state="open"] .badge {
-    color: var(--glow-cyan);
-  }
-
-  .card[data-state="cleared"] .badge {
-    color: var(--accent-pink);
-  }
-
-  .card-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.45rem;
-    margin-top: 0.75rem;
-  }
-
-  .card-actions .gd-btn,
   .select-actions .gd-btn,
   .hud-actions .gd-btn {
     padding: 0.4rem 0.85rem;
@@ -317,6 +246,104 @@ const gameContent = {
 
   #notice::backdrop {
     background: rgba(4, 6, 24, 0.62);
+  }
+
+  .dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+  }
+
+  /* .gd-btn sets display:inline-block, which would otherwise show a hidden button. */
+  #notice [hidden] {
+    display: none !important;
+  }
+
+  .dialog-actions .gd-btn {
+    margin-top: 0;
+  }
+</style>
+
+<style is:global>
+  /* The level cards and the dialog text are built by src/game/main.ts and
+     panels.ts after the page loads. Astro's scoped styles only reach elements
+     written in this file, so these rules are global, kept to this page by
+     starting each one with #level-cards or #notice. */
+  #level-cards .card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.9rem 0.95rem 1rem;
+    background: linear-gradient(180deg, rgba(16, 22, 84, 0.94), rgba(7, 10, 43, 0.96));
+    border: 3px solid #000;
+    border-radius: 16px;
+    box-shadow:
+      0 0 0 2px rgba(111, 214, 255, 0.28),
+      0 6px 0 #000;
+  }
+
+  #level-cards .card[data-state="locked"] {
+    opacity: 0.55;
+  }
+
+  #level-cards .card[data-state="cleared"] {
+    box-shadow:
+      0 0 0 2px rgba(255, 159, 191, 0.55),
+      0 6px 0 #000;
+  }
+
+  #level-cards .card h2 {
+    margin: 0.35rem 0 0;
+    font-size: 1.45rem;
+  }
+
+  #level-cards .card p {
+    margin: 0;
+  }
+
+  #level-cards .face {
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+  }
+
+  #level-cards .diff {
+    font-family: var(--font-display);
+    color: var(--ice);
+    font-size: 1.05rem;
+  }
+
+  #level-cards .song,
+  #level-cards .section {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+  }
+
+  #level-cards .badge {
+    margin-top: 0.35rem;
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+  }
+
+  #level-cards .card[data-state="open"] .badge {
+    color: var(--glow-cyan);
+  }
+
+  #level-cards .card[data-state="cleared"] .badge {
+    color: var(--accent-pink);
+  }
+
+  #level-cards .card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.75rem;
+  }
+
+  #level-cards .card-actions .gd-btn {
+    padding: 0.4rem 0.85rem;
+    font-size: 1rem;
   }
 
   #notice h2 {
@@ -419,21 +446,5 @@ const gameContent = {
     font-family: var(--font-display);
     color: var(--glow-cyan);
     white-space: nowrap;
-  }
-
-  .dialog-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.85rem;
-  }
-
-  /* .gd-btn sets display:inline-block, which would otherwise show a hidden button. */
-  #notice [hidden] {
-    display: none !important;
-  }
-
-  .dialog-actions .gd-btn {
-    margin-top: 0;
   }
 </style>
