@@ -1,0 +1,73 @@
+---
+import type { FeaturedItem } from "../data/types";
+
+interface Props {
+  item: FeaturedItem;
+}
+
+const { item } = Astro.props;
+const href = item.href;
+const external = href?.startsWith("http") ?? false;
+---
+
+{
+  href ? (
+    <a
+      class="card"
+      href={href}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noopener" : undefined}
+    >
+      <h3>{item.title}</h3>
+      <p>{item.blurb}</p>
+    </a>
+  ) : (
+    <article class="card">
+      <h3>{item.title}</h3>
+      <p>{item.blurb}</p>
+    </article>
+  )
+}
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    height: 100%;
+    padding: 1rem 1.05rem 1.1rem;
+    color: var(--text);
+    text-decoration: none;
+    background: rgba(7, 10, 43, 0.55);
+    border: 3px solid #000;
+    border-radius: 12px;
+    box-shadow: 0 4px 0 #000;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--ice);
+    text-wrap: balance;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-muted);
+  }
+
+  a.card:hover {
+    box-shadow:
+      0 4px 0 #000,
+      0 0 18px rgba(111, 214, 255, 0.4);
+  }
+
+  a.card:hover h3 {
+    color: var(--glow-cyan);
+  }
+
+  a.card:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #000;
+  }
+</style>

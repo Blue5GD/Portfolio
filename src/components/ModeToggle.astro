@@ -1,0 +1,80 @@
+---
+// Classic / Play switch. Each side is a normal link to the other page.
+// The current page's side is highlighted and marked aria-current="page".
+export type Mode = "classic" | "play";
+
+interface Props {
+  current: Mode;
+}
+
+const { current } = Astro.props;
+const base = import.meta.env.BASE_URL;
+
+const options: { mode: Mode; label: string; href: string }[] = [
+  { mode: "classic", label: "Classic", href: base },
+  { mode: "play", label: "Play", href: `${base}play` },
+];
+---
+
+<div class="mode-toggle" role="group" aria-label="Site mode">
+  {
+    options.map((o) => (
+      <a
+        href={o.href}
+        data-mode={o.mode}
+        aria-current={o.mode === current ? "page" : undefined}
+      >
+        {o.label}
+      </a>
+    ))
+  }
+</div>
+
+<script>
+  // Code in an Astro <script> runs in the browser, not at build time.
+  // Remember the last mode the visitor picked. We only save it; we never
+  // redirect based on it. Any link with a data-mode attribute counts,
+  // including the hero's Play button.
+  const STORAGE_KEY = "b5gd:mode";
+
+  for (const link of document.querySelectorAll<HTMLAnchorElement>("a[data-mode]")) {
+    link.addEventListener("click", () => {
+      try {
+        localStorage.setItem(STORAGE_KEY, link.dataset.mode ?? "classic");
+      } catch {
+        // localStorage can throw (private browsing, storage disabled). Not worth breaking navigation over.
+      }
+    });
+  }
+</script>
+
+<style>
+  .mode-toggle {
+    display: inline-flex;
+    padding: 4px;
+    gap: 4px;
+    border: 2px solid #000;
+    border-radius: 999px;
+    background: rgba(7, 10, 43, 0.7);
+  }
+
+  a {
+    padding: 0.35rem 0.95rem;
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s, background-color 0.15s;
+  }
+
+  a:hover {
+    color: var(--text);
+  }
+
+  a[aria-current="page"] {
+    color: var(--bg-deep);
+    background: var(--glow-cyan);
+    box-shadow: 0 0 12px rgba(111, 214, 255, 0.6);
+  }
+</style>

@@ -14,7 +14,6 @@ export const projects: Project[] = [
     ],
     tags: ["Python", "Monte Carlo", "Probabilistic Models", "Scheduling Algorithms"],
     links: [{ label: "GitHub", href: "https://github.com/Blue5GD/Probabilistic-Scheduler" }],
-    difficulty: "Demon",
   },
   {
     title: "Flipper Zero Anki Remote",
@@ -30,7 +29,6 @@ export const projects: Project[] = [
       { label: "GitHub", href: "https://github.com/Blue5GD/Anki-Remote" },
       { label: "App Catalog", href: "https://lab.flipper.net/apps/anki_remote" },
     ],
-    difficulty: "Insane",
   },
   {
     title: "FSRS-5 Desired Retention Adjuster",
@@ -43,6 +41,5 @@ export const projects: Project[] = [
     ],
     tags: ["Python", "NumPy", "Matplotlib"],
     links: [{ label: "GitHub", href: "https://github.com/Blue5GD/FSRS-5-Adjuster" }],
-    difficulty: "Harder",
   },
 ];

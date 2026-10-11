@@ -1,0 +1,44 @@
+---
+import ModeToggle, { type Mode } from "./ModeToggle.astro";
+import { identity } from "../data/identity";
+
+interface Props {
+  mode: Mode;
+}
+
+const { mode } = Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+
+<header class="nav">
+  <nav aria-label="Main">
+    <a class="logo wordmark" href={base}>{identity.brand}</a>
+    <ModeToggle current={mode} />
+  </nav>
+</header>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(7, 10, 43, 0.75);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(111, 214, 255, 0.15);
+  }
+
+  nav {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: 0.6rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .logo {
+    font-size: 1.6rem;
+    text-decoration: none;
+  }
+</style>

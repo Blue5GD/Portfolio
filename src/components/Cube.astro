@@ -1,0 +1,52 @@
+---
+// The player cube as an inline SVG. Astro turns an imported .svg file into a
+// component, so the drawing itself lives in src/assets/cube.svg.
+import CubeSvg from "../assets/cube.svg";
+
+interface Props {
+  size?: number; // width and height in px
+  bounce?: boolean; // idle hop animation
+}
+
+const { size = 160, bounce = false } = Astro.props;
+---
+
+<div class:list={["cube", { bounce }]} style={`--size: ${size}px`}>
+  <CubeSvg width={size} height={size} />
+</div>
+
+<style>
+  .cube {
+    width: var(--size);
+    height: var(--size);
+  }
+
+  /* A little GD-style hop: rise, fall, squash on landing, recover. */
+  .bounce :global(svg) {
+    transform-origin: 50% 100%;
+    animation: hop 1.6s ease-in-out infinite;
+  }
+
+  @keyframes hop {
+    0%,
+    100% {
+      transform: translateY(0) scale(1, 1);
+    }
+    40% {
+      transform: translateY(-12%) scale(1, 1);
+    }
+    75% {
+      transform: translateY(0) scale(1, 1);
+    }
+    85% {
+      transform: translateY(0) scale(1.06, 0.92);
+    }
+  }
+
+  /* The global reduced-motion rule shortens animations; this stops the hop entirely. */
+  @media (prefers-reduced-motion: reduce) {
+    .bounce :global(svg) {
+      animation: none;
+    }
+  }
+</style>

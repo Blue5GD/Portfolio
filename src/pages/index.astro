@@ -1,6 +1,20 @@
 ---
+// Classic mode. This file only arranges sections. The words live in src/data/,
+// so a later edit there updates the page (and, later, the game panels) together.
+// Order: hero, featured, about, projects, experience, awards, skills, education, contact.
+import { Image } from "astro:assets";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { identity } from "../data/identity";
+import Hero from "../components/Hero.astro";
+import SectionHeading from "../components/SectionHeading.astro";
+import FeaturedCard from "../components/FeaturedCard.astro";
+import ProjectCard from "../components/ProjectCard.astro";
+import ExperienceItem from "../components/ExperienceItem.astro";
+import AwardList from "../components/AwardList.astro";
+import SkillGroups from "../components/SkillGroups.astro";
+import Education from "../components/Education.astro";
+import Contact from "../components/Contact.astro";
+import Footer from "../components/Footer.astro";
+import avatar from "../assets/avatar-reference.png";
 import { about } from "../data/about";
 import { featured } from "../data/featured";
 import { projects } from "../data/projects";
@@ -8,112 +22,151 @@ import { experience } from "../data/experience";
 import { awards } from "../data/awards";
 import { skills } from "../data/skills";
 import { education } from "../data/education";
-
-const base = import.meta.env.BASE_URL;
 ---
 
-<BaseLayout>
-  <main class="skeleton">
-    <h1 class="wordmark">{identity.brand}</h1>
-    <p>{identity.name} · {identity.tagline}</p>
-    <a href={`${base}${identity.resumeFile}`}>Resume (PDF)</a>
+<BaseLayout mode="classic">
+  <main>
+    <Hero />
 
-    <!-- TEMPORARY: plain dump of src/data so content can be reviewed. Replaced in M3/M4. -->
-    <section class="debug">
-      <h2>About</h2>
-      {about.paragraphs.map((p) => <p>{p}</p>)}
-
-      <h2>Featured</h2>
-      <ol>
-        {featured.map((f) => (
-          <li>
-            <strong>{f.title}</strong>: {f.blurb} {f.href && <a href={f.href}>link</a>}
-          </li>
-        ))}
-      </ol>
-
-      <h2>Projects</h2>
-      {projects.map((p) => (
-        <article>
-          <h3>{p.title} <small>({p.difficulty}) · {p.dates}</small></h3>
-          <p>{p.summary}</p>
-          <ul>{p.bullets.map((b) => <li>{b}</li>)}</ul>
-          <p class="muted">{p.tags.join(" · ")}</p>
-          <p>{p.links.map((l) => <a href={l.href}>{l.label} </a>)}</p>
-        </article>
-      ))}
-
-      <h2>Experience</h2>
-      {experience.map((group) => (
-        <div>
-          <h3>{group.heading}</h3>
-          {group.items.map((item) => (
-            <div>
-              <strong>{item.role}, {item.org}</strong> <small>{item.dates}</small>
-              <ul>{item.bullets.map((b) => <li>{b}</li>)}</ul>
-            </div>
-          ))}
-          {group.footnote && <p class="muted">{group.footnote}</p>}
-        </div>
-      ))}
-
-      <h2>Awards</h2>
-      <ul>
-        {awards.map((a) => (
-          <li>{a.year}: {a.title}{a.detail && ` (${a.detail})`}</li>
-        ))}
-      </ul>
-
-      <h2>Skills</h2>
-      <ul>
-        {skills.map((g) => (
-          <li><strong>{g.name}:</strong> {g.skills.join(", ")}</li>
-        ))}
-      </ul>
-
-      <h2>Education</h2>
-      <ul>
-        {education.map((e) => (
-          <li>
-            <strong>{e.school}</strong>, {e.location}. {e.degree} {e.dates}
-            {e.details && <div class="muted">{e.details}</div>}
-          </li>
-        ))}
-      </ul>
-
-      <h2>Contact</h2>
-      <p>
-        <a href={`mailto:${identity.email}`}>{identity.email}</a> ·
-        <a href={identity.github}>GitHub</a> ·
-        <a href={identity.linkedin}>LinkedIn</a>
-      </p>
+    <section id="featured" class="panel">
+      <SectionHeading title="Featured" />
+      <div class="featured-grid">
+        {featured.map((item) => <FeaturedCard item={item} />)}
+      </div>
     </section>
+
+    <section id="about" class="panel">
+      <SectionHeading title="About" />
+      <div class="about">
+        <div class="portrait">
+          <Image
+            src={avatar}
+            alt="Blue5GD avatar: a white cube on a ship, in front of a blue light beam."
+            width={200}
+            height={200}
+          />
+        </div>
+        <div>
+          {about.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+        </div>
+      </div>
+    </section>
+
+    <section id="projects" class="panel">
+      <SectionHeading title="Projects" />
+      <div class="project-list">
+        {projects.map((project) => <ProjectCard project={project} />)}
+      </div>
+    </section>
+
+    <section id="experience" class="panel">
+      <SectionHeading title="Experience" />
+      {
+        experience.map((group) => (
+          <div class="group">
+            <h3>{group.heading}</h3>
+            {group.items.map((item) => (
+              <ExperienceItem item={item} />
+            ))}
+            {group.footnote && <p class="footnote">{group.footnote}</p>}
+          </div>
+        ))
+      }
+    </section>
+
+    <section id="awards" class="panel">
+      <SectionHeading title="Awards" />
+      <AwardList awards={awards} />
+    </section>
+
+    <section id="skills" class="panel">
+      <SectionHeading title="Skills" />
+      <SkillGroups groups={skills} />
+    </section>
+
+    <section id="education" class="panel">
+      <SectionHeading title="Education" />
+      <Education items={education} />
+    </section>
+
+    <Contact />
   </main>
+  <Footer />
 </BaseLayout>
 
 <style>
-  /* Styles in an Astro <style> tag only apply to this file's elements. */
-  .skeleton {
-    max-width: var(--content-width);
-    margin: 0 auto;
-    padding: 6rem 1.5rem;
+  .featured-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
   }
-  .skeleton h1 {
-    font-size: clamp(3rem, 10vw, 6rem);
-    text-align: center;
+
+  @media (min-width: 768px) {
+    .featured-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
-  .skeleton > p,
-  .skeleton > a {
+
+  .about {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 700px) {
+    .about {
+      flex-direction: row;
+      align-items: center;
+      gap: 1.5rem;
+    }
+  }
+
+  .portrait {
+    flex: none;
+    width: 200px;
+    border: 3px solid #000;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow:
+      0 0 24px rgba(111, 214, 255, 0.35),
+      0 5px 0 #000;
+  }
+
+  /* The <img> is rendered by Astro's Image component, so :global reaches it. */
+  .portrait :global(img) {
+    width: 100%;
+    height: auto;
     display: block;
-    text-align: center;
   }
-  .debug {
-    margin-top: 4rem;
-    padding: 2rem;
-    border: 2px dashed var(--text-muted);
-    border-radius: var(--radius);
+
+  .about p:last-child {
+    margin-bottom: 0;
   }
-  .muted {
+
+  .project-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .group h3 {
+    margin: 0 0 0.85rem;
+    font-size: 1.35rem;
+    color: var(--glow-cyan);
+  }
+
+  .group + .group {
+    margin-top: 0.4rem;
+    padding-top: 1.15rem;
+    border-top: 2px solid rgba(111, 214, 255, 0.18);
+  }
+
+  .footnote {
+    margin: 0.35rem 0 0;
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(159, 179, 217, 0.28);
     color: var(--text-muted);
+    font-size: 0.95rem;
   }
 </style>

@@ -1,0 +1,52 @@
+---
+import type { Award } from "../data/types";
+
+interface Props {
+  awards: Award[];
+}
+
+const { awards } = Astro.props;
+---
+
+<ul class="awards">
+  {
+    awards.map((award) => (
+      <li>
+        <span class="date">{award.date}</span>
+        <span>
+          {award.title}
+          {award.detail && <span class="detail"> — {award.detail}</span>}
+        </span>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .awards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.75rem 1rem;
+    align-items: baseline;
+  }
+
+  .date {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    color: var(--glow-cyan);
+    white-space: nowrap;
+  }
+
+  .detail {
+    color: var(--text-muted);
+  }
+</style>

@@ -1,0 +1,89 @@
+---
+import type { Project } from "../data/types";
+
+interface Props {
+  project: Project;
+}
+
+const { project } = Astro.props;
+---
+
+<article class="project">
+  <div class="split-head">
+    <h3>{project.title}</h3>
+    <p class="dates">{project.dates}</p>
+  </div>
+  <p class="summary">{project.summary}</p>
+  <ul class="bullets">
+    {project.bullets.map((bullet) => <li>{bullet}</li>)}
+  </ul>
+  <ul class="tags">
+    {project.tags.map((tag) => <li>{tag}</li>)}
+  </ul>
+  <p class="links">
+    {
+      project.links.map((link) => (
+        <a href={link.href} target="_blank" rel="noopener">
+          {link.label}
+        </a>
+      ))
+    }
+  </p>
+</article>
+
+<style>
+  .project {
+    padding: 1rem 1.05rem 1.1rem;
+    background: rgba(7, 10, 43, 0.45);
+    border: 2px solid rgba(111, 214, 255, 0.22);
+    border-radius: 12px;
+  }
+
+  h3 {
+    font-size: 1.4rem;
+    text-wrap: balance;
+  }
+
+  .summary {
+    margin: 0.45rem 0 0;
+  }
+
+  .bullets {
+    margin: 0.45rem 0 0;
+    padding-left: 1.15rem;
+  }
+
+  .bullets li {
+    margin: 0.28rem 0;
+  }
+
+  .bullets li::marker {
+    color: var(--glow-cyan);
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.85rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tags li {
+    padding: 0.12rem 0.55rem;
+    border: 2px solid rgba(111, 214, 255, 0.4);
+    border-radius: 999px;
+    background: rgba(111, 214, 255, 0.08);
+    color: var(--ice);
+    font-size: 0.78rem;
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.1rem;
+    margin: 0.85rem 0 0;
+    font-weight: 600;
+  }
+</style>

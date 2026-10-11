@@ -1,0 +1,45 @@
+---
+import type { EducationItem } from "../data/types";
+
+interface Props {
+  items: EducationItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="schools">
+  {
+    items.map((item) => (
+      <article class="school">
+        <div class="split-head">
+          <h3>{item.school}</h3>
+          <p class="dates">{item.dates}</p>
+        </div>
+        <p class="line">{[item.degree, item.location].filter(Boolean).join(" · ")}</p>
+        {item.details && <p class="details">{item.details}</p>}
+      </article>
+    ))
+  }
+</div>
+
+<style>
+  .school + .school {
+    margin-top: 1.1rem;
+    padding-top: 1.1rem;
+    border-top: 2px solid rgba(111, 214, 255, 0.18);
+  }
+
+  h3 {
+    font-size: 1.35rem;
+  }
+
+  .line {
+    margin: 0.35rem 0 0;
+  }
+
+  .details {
+    margin: 0.25rem 0 0;
+    color: var(--text-muted);
+  }
+</style>

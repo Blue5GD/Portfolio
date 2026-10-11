@@ -8,20 +8,31 @@ import "@fontsource/inter/400.css";
 import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
 import "../styles/global.css";
+import Nav from "../components/Nav.astro";
+import type { Mode } from "../components/ModeToggle.astro";
 
 // Props are like function parameters for a component.
 interface Props {
   title?: string;
   description?: string;
+  mode: Mode; // which side of the Classic / Play toggle is highlighted
 }
 
 const {
   title = "Micah Winesberry | Blue5GD",
   description = "Portfolio of Micah Winesberry (Blue5GD), Yale CS + Math '30.",
+  mode,
 } = Astro.props;
 
 // The site lives under /Portfolio/, so every internal URL starts from BASE_URL.
 const base = import.meta.env.BASE_URL;
+
+// Share cards and search results need absolute URLs. Astro.site is the
+// production origin from astro.config.mjs, even while `astro dev` is local.
+const origin = Astro.site ?? new URL("https://blue5gd.github.io");
+const canonical = new URL(Astro.url.pathname, origin);
+const ogImage = new URL(`${base}og-image.png`, origin);
+const ogAlt = "Blue5GD avatar: a white cube riding a ship, in a blue light beam.";
 ---
 
 <!doctype html>
@@ -32,9 +43,47 @@ const base = import.meta.env.BASE_URL;
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="author" content="Micah Winesberry" />
+    <meta name="theme-color" content="#070a2b" />
+    <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Blue5GD" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={ogAlt} />
   </head>
   <body>
-    <slot />
+    <a class="skip-link gd-btn" href="#content">Skip to content</a>
+    <!-- Decorative only. The real content starts in .page. -->
+    <div class="atmosphere" aria-hidden="true">
+      <span class="shard shard-a"></span>
+      <span class="shard shard-b"></span>
+      <span class="shard shard-c"></span>
+      <span class="shard shard-d"></span>
+      <span class="particle particle-pink particle-1"></span>
+      <span class="particle particle-cyan particle-2"></span>
+      <span class="particle particle-pink particle-3"></span>
+      <span class="particle particle-cyan particle-4"></span>
+      <span class="particle particle-pink particle-5"></span>
+      <span class="particle particle-cyan particle-6"></span>
+    </div>
+    <div class="page">
+      <Nav mode={mode} />
+      <!-- tabindex="-1" lets the skip link move keyboard focus here. -->
+      <div id="content" tabindex="-1">
+        <slot />
+      </div>
+    </div>
   </body>
 </html>

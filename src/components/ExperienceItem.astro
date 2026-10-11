@@ -1,0 +1,63 @@
+---
+import type { ExperienceItem } from "../data/types";
+
+interface Props {
+  item: ExperienceItem;
+}
+
+const { item } = Astro.props;
+---
+
+<article class="item">
+  <div class="split-head">
+    <div>
+      <h4>{item.role}</h4>
+      <p class="org">
+        {
+          item.href ? (
+            <a href={item.href} target="_blank" rel="noopener">
+              {item.org}
+            </a>
+          ) : (
+            item.org
+          )
+        }
+      </p>
+    </div>
+    <p class="dates">{item.dates}</p>
+  </div>
+  <ul class="bullets">
+    {item.bullets.map((bullet) => <li>{bullet}</li>)}
+  </ul>
+</article>
+
+<style>
+  .item {
+    margin-bottom: 1rem;
+    padding-left: 0.9rem;
+    border-left: 3px solid rgba(111, 214, 255, 0.55);
+  }
+
+  h4 {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+
+  .org {
+    margin: 0.1rem 0 0;
+    color: var(--text-muted);
+  }
+
+  .bullets {
+    margin: 0.4rem 0 0;
+    padding-left: 1.15rem;
+  }
+
+  .bullets li {
+    margin: 0.22rem 0;
+  }
+
+  .bullets li::marker {
+    color: var(--glow-cyan);
+  }
+</style>

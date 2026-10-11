@@ -1,0 +1,88 @@
+---
+import SectionHeading from "./SectionHeading.astro";
+import { identity } from "../data/identity";
+
+const base = import.meta.env.BASE_URL;
+
+// Drop the https:// so the card shows a short, readable address.
+function shortUrl(href: string): string {
+  return href.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+}
+
+const links: { label: string; value: string; href: string; external: boolean }[] = [
+  { label: "Email", value: identity.email, href: `mailto:${identity.email}`, external: false },
+  { label: "GitHub", value: shortUrl(identity.github), href: identity.github, external: true },
+  { label: "LinkedIn", value: shortUrl(identity.linkedin), href: identity.linkedin, external: true },
+  {
+    label: "Resume",
+    value: "PDF",
+    href: `${base}${identity.resumeFile}`,
+    external: true,
+  },
+];
+---
+
+<section id="contact" class="panel">
+  <SectionHeading title="Contact" />
+  <!-- address is the HTML element for how to reach the person who made the page. -->
+  <address>
+    {
+      links.map((link) => (
+        <a href={link.href} target={link.external ? "_blank" : undefined} rel={link.external ? "noopener" : undefined}>
+          <span class="label">{link.label}</span>
+          <span class="value">{link.value}</span>
+        </a>
+      ))
+    }
+  </address>
+</section>
+
+<style>
+  address {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+    margin: 0;
+    font-style: normal;
+  }
+
+  @media (min-width: 700px) {
+    address {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  a {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.85rem 1rem;
+    color: var(--text);
+    text-decoration: none;
+    background: rgba(7, 10, 43, 0.55);
+    border: 3px solid #000;
+    border-radius: 12px;
+    box-shadow: 0 4px 0 #000;
+  }
+
+  a:hover .label {
+    color: var(--glow-cyan);
+  }
+
+  a:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #000;
+  }
+
+  .label {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    color: var(--ice);
+  }
+
+  .value {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+    overflow-wrap: anywhere;
+  }
+</style>

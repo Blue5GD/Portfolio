@@ -28,7 +28,7 @@ export interface FeaturedItem {
   href?: string;
 }
 
-/** GD difficulty labels, used for project badges and level select. */
+/** GD difficulty labels, used by the game's level select. */
 export type Difficulty =
   | "Easy"
   | "Normal"
@@ -46,7 +46,6 @@ export interface Project {
   bullets: string[];
   tags: string[];
   links: Link[];
-  difficulty: Difficulty;
 }
 
 export interface ExperienceItem {
@@ -65,7 +64,8 @@ export interface ExperienceGroup {
 }
 
 export interface Award {
-  year: number;
+  /** Shown as "May 2026". Month is a 3-letter abbreviation. */
+  date: string;
   title: string;
   detail?: string;
 }

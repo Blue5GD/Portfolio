@@ -1,0 +1,52 @@
+<!--
+  Blue5GD's Geometry Dash cube, recreated from docs/plan-assets/gd-icon.png.
+  The face is drawn on a 100x100 grid. The viewBox adds 10 units of room on
+  every side so the cyan glow isn't cut off.
+  Draw order matters in SVG: later shapes are painted on top of earlier ones.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 120 120" role="img" aria-label="Blue5GD's cube">
+  <defs>
+    <!-- Soft cyan glow: blur the cube's silhouette, tint it cyan, put it underneath. -->
+    <filter id="cube-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur" />
+      <feFlood flood-color="#6fd6ff" flood-opacity="0.9" />
+      <feComposite in2="blur" operator="in" result="glow" />
+      <feMerge>
+        <feMergeNode in="glow" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- The mouth: a top edge that sags slightly in the middle, and a rounded bottom. Reused 3 times below. -->
+    <path id="cube-mouth" d="M15 42 Q50 52 85 42 C85 72 70 89 50 89 C30 89 15 72 15 42 Z" />
+
+    <!-- Anything drawn with this clip only shows up inside the mouth. -->
+    <clipPath id="cube-mouth-clip">
+      <use href="#cube-mouth" />
+    </clipPath>
+  </defs>
+
+  <g filter="url(#cube-glow)" stroke="#000000" stroke-linejoin="round">
+    <!-- Face -->
+    <rect x="3" y="3" width="94" height="94" rx="7" fill="#ffffff" stroke-width="6" />
+
+    <!-- Eyes -->
+    <circle cx="24" cy="23" r="9.5" fill="#75bcff" stroke-width="4" />
+    <circle cx="76" cy="23" r="9.5" fill="#75bcff" stroke-width="4" />
+
+    <!-- Mouth interior -->
+    <use href="#cube-mouth" fill="#3a5976" stroke="none" />
+
+    <!-- Teeth and tongue are clipped so they never poke outside the mouth. -->
+    <g clip-path="url(#cube-mouth-clip)" fill="#75bcff" stroke-width="3">
+      <polygon points="18,42.8 34,46 26,62" />
+      <polygon points="35.5,46.1 48.5,47 42,61" />
+      <polygon points="51.5,47 64.5,46.1 58,61" />
+      <polygon points="66,46 82,42.8 74,62" />
+      <ellipse cx="50" cy="86" rx="17" ry="10" />
+    </g>
+
+    <!-- Mouth outline last, so it sits cleanly on top of the teeth and tongue. -->
+    <use href="#cube-mouth" fill="none" stroke-width="4.5" />
+  </g>
+</svg>
