@@ -256,7 +256,7 @@ Difficulty climbs steadily. **Each level's layout, pacing, colors, and particle 
 1. **"First Level"** -- Normal face -- song: *Race Around the World* by Waterflame -- section: **About + Featured**
    - Vibe: upbeat, bright, friendly. A tutorial.
    - Theme: the default bright blue site palette.
-   - Layout: no new obstacles. About 80 tiles, 1 checkpoint. Flat ground, then single floor spikes, then one jumpable gap (about 3 tiles), then platforms with one low ceiling spike (a walk or a tap-jump passes, a full jump hits). On-screen hints teach the controls. Easy to beat on the first or second try.
+   - Layout: no new obstacles. About 120 tiles, 2 checkpoints. Flat ground, then floor spike rows of one, two, three, and four, then one jumpable gap (about 3 tiles), then a platform with two tap-jump gates near the end. Each gate is a ceiling spike with a floor spike directly under it: a tap passes, a full jump hits the top spike, and walking hits the bottom one. On-screen hints teach the controls.
    - Info blocks: About, then the 3 Featured items (Featured order).
 
 2. **"Lost World"** -- Hard face -- song: *Another World* by Razorrekker -- section: **Projects**
