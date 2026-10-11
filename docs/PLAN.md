@@ -91,7 +91,7 @@ GD icon reference: `Portfolio/docs/plan-assets/gd-icon.png` (114x119). This is t
 **Atmosphere:**
 - Diagonal deep-blue-to-violet gradient background, faint large translucent triangles/shards, small floating square particles (CSS animation, disabled when `prefers-reduced-motion`), and a vertical light beam behind the hero (like the avatar).
 - Classic mode borrows Geometry Dash UI language: sections styled as level cards with a progress bar, buttons styled as chunky GD buttons with an outline and a press-down effect.
-- Each project gets a playful GD "difficulty face" badge (e.g., Flipper = Insane, Scheduler = Demon, FSRS = Harder) as a small creative touch.
+- Classic mode text stays formal: no GD terms (difficulty labels or faces, "levels", etc.) in the content. GD styling is visual only (colors, buttons, cube). Difficulty faces appear only in game mode.
 
 ## 3. Information architecture and page order
 
@@ -233,6 +233,20 @@ This is GD-styled **platformer mode**, not an auto-runner. The player directly c
 
 - `.` empty, `#` solid block, `^` spike (floor), `v` spike (ceiling), `<` / `>` spike (wall, pointing left/right), `P` player start, `C` checkpoint flag, `I` info block (opens the panel content linked by index), `O` end portal, `J` jump pad (launch velocity -1250), `=` one-way platform (solid only from above), `~` ice block (solid, low friction: ground friction and acceleration multiplied by 0.15, so the cube slides)
 - Each level is `{ id, title, sectionId, difficulty, song, theme, rows: string[], infoBlocks: ContentRef[] }`. Rows are 12 to 14 tiles tall and about 60 to 160 tiles wide.
+
+**Spacing (from the physics in section 5.3).** A held jump rises about 3.5 tiles and covers about 5 tiles at full run. A tap-jump stays under 1 tile high, which is how a low ceiling spike works: walking or a tap passes, a full jump hits. A jump pad rises about 7.5 tiles. A pit 6 tiles wide is not jumpable. Standing on a crumble for 0.4s is about 3 tiles of running, so a longer crumble bridge means you cannot stop.
+
+**Later obstacles (required when levels 2–6 are built, not before).** Warmup and First Level stay on the tiles above. The later levels must not be longer copies of the same spike corridors. Still cube-only: no ship, no wave, no gravity flip. Every one of these resets when the cube respawns, so a death cannot soft-lock the level. Each new obstacle appears once in a safe form before it can kill you. An info block gets 4 empty tiles of safe floor on each side, so closing the panel cannot drop the cube onto a saw or a laser.
+
+Movers are extra data on the level, not a tile character: `{ kind: "platform" | "saw", c, r, axis: "x" | "y", tiles, seconds }`. `tiles` is how far it travels. `seconds` is the full round trip (out and back). It starts at `(c, r)`. On respawn, movers snap back to that start and their clocks restart.
+
+- **Moving platform.** One solid tile. It carries the cube when the cube is standing on it. The first one is slow: 4 tiles, 4 seconds, across a pit wider than a jump, with a ceiling so you cannot jump the pit instead.
+- **Saw.** Same motion, but it does not carry the cube. Hitbox is a centered box half a tile wide (smaller than the drawn saw). The first saw is that same slow shuttle, over a platform you can wait on.
+- **Jump orb (`o`).** Not solid. The pad `J` launches on touch. The orb launches only if jump is pressed while overlapping it, including in the air. Launch speed sits between a normal jump and a pad, and holding or releasing jump does not change that height. Touching it does nothing. Leaving it rearms it. The first orb hangs over a safe floor, so a missed tap drops you back onto that floor.
+- **Falling spike (`!`).** Looks like a ceiling spike. Drops when the cube enters that column, using the same gravity, then stays where it lands and stays deadly until respawn. Hang the real ones at least 6 tiles up so the fall takes about half a second, with a clear sprint afterward. The tutorial icicle drops into a pit beside the path, not onto it.
+- **Laser (`-` horizontal, `|` vertical).** A run of the same character is one beam. Every beam in the level shares one clock: 1.1s on, 0.7s off. Deadly only while on. While off, the cell is empty and drawn as a faint line. On respawn the clock restarts at the beginning of the off window. Never place a beam on a spawn or checkpoint tile. The first laser is one vertical beam over flat ground, so waiting is free. The off window is only long enough to run about 6 tiles, so a corridor needs a waiting gap between beams.
+- **Crumble (`x`).** Solid like `#` until the cube has stood on it for 0.4s. It cracks at 0.2s, then falls away and is gone until respawn. It is not itself deadly; the pit under it is. The timer starts only when the cube is standing on it. The first one is a single tile over a small pit.
+
 - `theme` controls colors: `bg` gradient stops, `block` fill/outline, `spike` color, `particles` style, and an optional `darkness` setting (see levels 5 and 6).
 
 ### 5.5 Levels (6, in difficulty order)
@@ -242,37 +256,37 @@ Difficulty climbs steadily. **Each level's layout, pacing, colors, and particle 
 1. **"First Level"** -- Normal face -- song: *Race Around the World* by Waterflame -- section: **About + Featured**
    - Vibe: upbeat, bright, friendly. A tutorial.
    - Theme: the default bright blue site palette.
-   - Layout: flat ground, then single spikes, then a gap, then platforms. On-screen hints teach the controls. 1 checkpoint. Easy to beat on the first or second try.
+   - Layout: no new obstacles. About 80 tiles, 1 checkpoint. Flat ground, then single floor spikes, then one jumpable gap (about 3 tiles), then platforms with one low ceiling spike (a walk or a tap-jump passes, a full jump hits). On-screen hints teach the controls. Easy to beat on the first or second try.
    - Info blocks: About, then the 3 Featured items (Featured order).
 
 2. **"Lost World"** -- Hard face -- song: *Another World* by Razorrekker -- section: **Projects**
    - Vibe: cold, atmospheric, wide open, with a sense of discovery.
    - Theme: **ice world**. Pale cyan/white blocks with a frosty outline, a deep teal-to-navy gradient, slowly falling snow particles, icicle-shaped ceiling spikes.
-   - Layout: introduces `~` ice blocks (slippery landings and run-ups), one-way platforms, and the first jump pad. 2 checkpoints.
+   - Layout: about 100 tiles, 2 checkpoints. Ice first with no spikes, then ice into one floor spike (jump early, because the cube slides), then one-way platforms you can fall back through, then one jump pad that lands on normal ground, not ice. Checkpoint. A safe icicle that drops into a pit beside the path, then two real icicles over a sprint of normal ground. Checkpoint. Three crumble tiles over a pit, with no ice on that stretch.
    - Info blocks: the 3 projects (Scheduler, Flipper, FSRS).
 
 3. **"Mystic Mountains"** -- Harder face -- song: *The Falling Mysts* by Dimrain47 -- section: **Experience, High School**
    - Vibe: misty, emotional, flowing, and descending.
    - Theme: soft violet/grey mist. A semi-transparent fog layer drifts across the screen, and light motes drift downward.
-   - Layout: built around falling. Long vertical drops through spike-lined shafts (wall spikes `<` `>`), then horizontal runs between them, with ceiling spikes for tension. 2 checkpoints.
+   - Layout: about 110 tiles, 2 checkpoints, each on a ledge after a drop. No ice, orbs, or lasers. First shaft is 3 tiles wide with spikes on one wall. Then a flat run under ceiling spikes. Later shaft is 2 tiles wide with spikes on both walls. One moving platform: the slow 4-tile shuttle over a pit wider than a jump, under a ceiling so the pit cannot be jumped.
    - Info blocks: Science Olympiad, Mu Alpha Theta, Chess, Service.
 
 4. **"Sci-Fi Showdown"** -- Insane face -- song: *At the Speed of Light* by Dimrain47 -- section: **Experience, At Yale**
    - Vibe: fast, intense, relentless energy.
    - Theme: neon. Electric cyan and magenta, with motion-streak particles behind the cube while it's moving fast.
-   - Layout: a long gauntlet hall. Chained jump pads, tight spike corridors that need precise short hops, and fast run-and-jump sequences with little time to rest. 3 checkpoints.
+   - Layout: about 140 tiles, 3 checkpoints. One vertical laser you can wait out, then three jump pads about 6 tiles apart. Checkpoint. One orb over a safe floor, then an orb over a pit, then two orbs in a row. Checkpoint. Three vertical lasers with a floor gap between them and a low ceiling so you cannot jump over the beams. Then a short-hop spike corridor, then a pad into an orb into one laser.
    - Info blocks: CourseTable, Catalyst.
 
 5. **"Last Hope"** -- Hard Demon face -- song: *Figures* by ~NK~ -- section: **Awards**
    - Vibe: unsettling, and it gets heavier as it goes.
    - Theme: starts in dusky purple and gets **progressively darker** with progress. The background and block brightness fade toward near-black as the player moves right (darkness goes from 0 to 0.75), with deep red accents in the final third.
-   - Layout: demon-difficulty precision. Mixed floor, ceiling, and wall spikes, ice sections, and pad chains. 3 checkpoints.
+   - Layout: about 140 tiles, 3 checkpoints, while the screen darkens. One visible crumble tile, then one laser, then a laser over a crumble so standing still drops you. Checkpoint near 30% progress. Ice into a pad that lands on normal ground, then ice with floor spikes. A descending crumble staircase. Checkpoint near 60%, where the red accents start. Final third: a pad chain whose landings crumble, ending in a laser.
    - Info blocks: the awards, split into 3 panels, newest first.
 
 6. **"The Final Battle"** -- Extreme Demon face -- song: *Battle Against a True Hero* (Undyne the Undying theme, Undertale) by Toby Fox -- section: **Skills, Education, Contact**
    - Vibe: a climactic final boss fight. Heroic, intense, no mercy.
    - Theme: **explicitly dark the entire time.** A near-black background, with the visible area limited to a radial light around the cube (radius about 5 tiles; everything outside fades to black). Spikes are glowing cyan-blue spear shapes, so they're visible inside the dark. Occasional green flashes act as warnings.
-   - Layout: **the hardest level on the site.** The longest level, combining every mechanic, including blind-ish sections where only the cube's light shows the path. 4 checkpoints.
+   - Layout: **the hardest level on the site.** About 160 tiles, 4 checkpoints, inside the 5-tile light, including blind-ish sections where only the cube's light shows the path. A green flash of about a quarter second plays just before a saw reaches the cube or a laser turns on. Order: spikes in the dark, then one slow saw over a platform you can wait on, then falling spikes and a crumble bridge, then lasers and orbs, then one last corridor that uses the saw, a laser, a crumble, and an orb together. The fourth checkpoint sits at the start of that last corridor.
    - Ending: the end portal opens the Contact panel with a "Level Complete!" burst of square particles, plus total attempts and links.
    - Info blocks: Skills, Education, Contact.
 
@@ -329,7 +343,7 @@ flowchart TD
   Panels -->|"pause and resume"| Audio
 ```
 
-Content gets into the game like this: `play.astro` serializes the needed `src/data` content into a `<script type="application/json" id="content">` block at build time. Then `panels.ts` reads it. That way content is never duplicated.
+Content gets into the game like this: `play.astro` serializes the needed `src/data` content into a `<script type="application/json" id="game-content">` block at build time. Then `panels.ts` reads it. The id is `game-content`, not `content`, because `BaseLayout` already uses `id="content"` for the page body. That way content is never duplicated.
 
 ## 6. File structure (inside the existing Portfolio repo)
 
@@ -409,6 +423,7 @@ Portfolio/
 - The resume in the repo is the phone-redacted version. The six songs are provided in `docs/plan-assets/`.
 - Classic is the default route. The game is opt-in at `/play` and always skippable.
 - About uses placeholder copy until the user writes it.
+- Classic mode is somewhat formal: no GD references in its text, and no difficulty badges on project cards.
 - Level names, difficulty faces, songs, and sections are fixed as listed in section 5.5. Levels must match their song's vibe. Level 6 is dark and the hardest.
 - Tulane Science Olympiad is not in Awards. It's mentioned only under Science Olympiad experience.
 - Science fair mapping (confirmed by the user): Scheduler = Louisiana State 1st (Math) + GNOSEF 3rd/ONR award (2026). FSRS = GNOSEF 1st (Math and Systems Software) + Louisiana State 4th Systems Software (2025).
