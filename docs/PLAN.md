@@ -290,7 +290,7 @@ Difficulty climbs steadily. **Each level's layout, pacing, colors, and particle 
 5. **"Last Hope"** -- Hard Demon face -- song: *Figures* by ~NK~ -- section: **Awards**
    - Vibe: unsettling, and it gets heavier as it goes.
    - Theme: starts in dusky purple and gets **progressively darker** with progress. The background and block brightness fade toward near-black as the player moves right (darkness goes from 0 to 0.75), with deep red accents in the final third.
-   - Layout (shipped, 475 tiles wide, 14 rows, 3 checkpoints): almost every solid tile is a crumble, including walls, so standing still drops the floor. Ice, lasers, falling spikes, orbs, pads, and one moving platform, while the screen darkens. Red accents start near 60% progress.
+   - Layout (shipped, 475 tiles wide, 14 rows, 3 checkpoints): almost every solid tile is a crumble, including walls, so standing still drops the floor. The opening floor through column 7 is solid, so the spawn does not drop before the first info block. Ice, lasers, falling spikes, orbs, pads, and one moving platform, while the screen darkens. Red accents start near 60% progress.
    - Info blocks: the awards, split into 3 panels, newest first.
 
 6. **"The Final Battle"** -- Extreme Demon face -- song: *Battle Against a True Hero* (Undyne the Undying theme, Undertale) by Toby Fox -- section: **Skills, Education, Contact**
