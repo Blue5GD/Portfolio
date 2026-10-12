@@ -33,10 +33,87 @@ export type ContentRef =
   | { kind: "education" }
   | { kind: "contact" };
 
+/** Which palette and background a course uses. "bright" is First Level. "neon" is Sci-Fi Showdown. "dusk" is Last Hope. */
+export type ThemeId = "bright" | "ice" | "mist" | "neon" | "dusk";
+
+/**
+ * A moving platform. It is not a letter in the ASCII map.
+ * It starts at column `c`, row `r`, travels `tiles` away, then comes back.
+ * `seconds` is the full round trip.
+ */
+export interface MoverDef {
+  kind: "platform";
+  c: number;
+  r: number;
+  axis: "x" | "y";
+  tiles: number;
+  seconds: number;
+}
+
+/**
+ * One laser beam. A run of `|` in a column, or `-` in a row, is a single beam.
+ * Every beam in the level shares one clock. See `laserActive` in physics.ts.
+ */
+export interface Laser {
+  /** "y" runs down the column (`|`). "x" runs across the row (`-`). */
+  axis: "x" | "y";
+  /** Leftmost column (for "x") or the column (for "y"). */
+  c: number;
+  /** Top row (for "y") or the row (for "x"). */
+  r: number;
+  /** How many tiles the beam covers. */
+  length: number;
+}
+
+/** The live platform. `x` and `y` are the top-left, in pixels. */
+export interface Mover {
+  kind: "platform";
+  axis: "x" | "y";
+  originX: number;
+  originY: number;
+  /** How far it travels from the start, in pixels. */
+  distance: number;
+  /** Full round trip, out and back, in seconds. */
+  period: number;
+  clock: number;
+  x: number;
+  y: number;
+  prevX: number;
+  prevY: number;
+}
+
+/**
+ * A ceiling spike that drops once the cube enters its column.
+ * `y` is the top of the tile, in pixels. It starts at `r` and moves down.
+ */
+export interface FallingSpike {
+  c: number;
+  r: number;
+  y: number;
+  vy: number;
+  /** wait: hanging. fall: dropping. rest: sitting where it landed, or gone off the map. */
+  phase: "wait" | "fall" | "rest";
+}
+
+/**
+ * A floor tile that holds, cracks, then falls. It is not itself deadly.
+ * The hole it leaves is the hazard. `stood` is how long the cube has been on it.
+ */
+export interface Crumble {
+  c: number;
+  r: number;
+  y: number;
+  vy: number;
+  stood: number;
+  /** firm: solid. fall: breaking away. gone: empty until respawn. */
+  phase: "firm" | "fall" | "gone";
+}
+
 /** A level after the ASCII map has been checked. */
 export interface Level {
   id: string;
   title: string;
+  theme: ThemeId;
   width: number;
   height: number;
   /** Each string is one row. Every row has the same length. */
@@ -48,6 +125,10 @@ export interface Level {
   signs: Sign[];
   /** Map key "col,row" to an index in `panels`. */
   infoAt: Map<string, number>;
+  /** Moving platforms. Empty for courses that do not use one. */
+  movers: MoverDef[];
+  /** Laser beams gathered from `|` and `-` runs. */
+  lasers: Laser[];
 }
 
 export interface Player {
@@ -82,6 +163,10 @@ export interface Particle {
   rot: number;
   vr: number;
   color: string;
+  /** Burst squares fade out. Snow and motes drift. Streaks trail the cube. */
+  mode: "burst" | "snow" | "mote" | "streak";
+  /** Sideways wobble for snow. Burst particles leave this at 0. */
+  drift: number;
 }
 
 /** Keys the physics step reads. `input.ts` fills this in from the keyboard. */
@@ -118,6 +203,21 @@ export interface GameState {
   collected: Set<string>;
   /** Stops a jump pad from firing again until the cube leaves it. */
   padLock: boolean;
+  /** Stops a jump orb from firing again until the cube leaves that orb. */
+  orbLock: boolean;
+  /**
+   * Seconds since the last respawn. Every laser uses this same clock.
+   * 0 is the start of the off window, so a fresh spawn is never inside a beam.
+   */
+  laserClock: number;
+  /** `!` tiles. Reset to hanging when the cube respawns. */
+  fallingSpikes: FallingSpike[];
+  /** `x` tiles. Reset to firm when the cube respawns. */
+  crumbles: Crumble[];
+  /** Moving platforms. Clocks restart when the cube respawns. */
+  movers: Mover[];
+  /** "col,row" to the crumble in that cell, so collision does not scan the list. */
+  crumbleAt: Map<string, Crumble>;
   reducedMotion: boolean;
   viewW: number;
   viewH: number;

@@ -7,6 +7,7 @@ import { startLoop } from "./loop";
 import { fillCredits, fillPanel, readContent } from "./panels";
 import { createGame, step } from "./physics";
 import { render } from "./render";
+import { getTheme } from "./themes";
 import {
   loadMuted,
   loadProgress,
@@ -311,6 +312,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     }
 
     const level = parseLevel(course.level);
+    canvas.style.background = getTheme(level.theme).sky[0];
     const next = createGame(level, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     next.difficulty = course.difficulty;
     next.onAttempt = () => {
