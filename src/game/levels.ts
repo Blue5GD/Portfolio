@@ -1,9 +1,9 @@
 import type { LevelDef } from "./level";
 import type { DifficultyId } from "./types";
 
-// /play shows a level select built from `courses`. First Level through Mystic
-// Mountains have maps. The other cards are here so unlocking them has a place
-// to land; their rows get written in later.
+// /play shows a level select built from `courses`. First Level through Sci-Fi
+// Showdown have maps. Last Hope and The Final Battle are here so unlocking
+// them has a place to land; their rows get written in later.
 //
 // Tile key:
 //   . empty    # block     ~ ice       = one-way platform
@@ -11,6 +11,9 @@ import type { DifficultyId } from "./types";
 //   P start    C checkpoint    I info block    J jump pad    O end portal
 //   ! falling spike (drops when the cube enters that column)
 //   x crumble (solid until you stand on it, then it falls)
+//   o jump orb (press jump while the cube is touching it)
+//   | vertical laser    - horizontal laser
+// A run of | or - is one beam. Every beam in a level shares one timer.
 // A moving platform is not a letter. It is listed on the level as `movers`.
 //
 // Row 0 is the top. Every row in a level is the same length.
@@ -206,6 +209,81 @@ const mysticMountains: LevelDef = {
   ],
 };
 
+// Sci-Fi Showdown. Insane, and harder than Mystic Mountains.
+// Lasers and jump orbs are new. A full jump still clears about five tiles.
+// A pit of six is not jumpable. Every laser shares one clock: 0.7s off,
+// then 1.1s on. Respawning starts that clock at the beginning of the off time.
+// The off window covers about six tiles of running, so a close pair of beams
+// has to be crossed in one go. A wider gap means you stop and wait again.
+// Columns:
+//   0 wall, 2 start, 8 CourseTable
+//   26 one vertical laser on flat ground. Wait until it is off, then walk through.
+//   40, 49, 58 three jump pads. Each pit is 6 tiles. Each landing is only 3,
+//   and the next pad sits on the last of those tiles.
+//   72 checkpoint
+//   92 an orb over safe floor. Jump into it, then press jump again.
+//   100 an orb at the edge of a 6-tile pit. The landing is only 3 tiles.
+//   116 checkpoint
+//   132 an orb on the lip. 133 and 134 two lasers. 135 an orb on the way up,
+//   140 a third orb. The pit under the chain is columns 133-146. Missing a
+//   ring drops you. Leave the lip when the beams blink off. Both beams fit
+//   in that one off-window.
+//   152 checkpoint, 160 Catalyst
+//   181-185 a pit of 5 with a laser on column 183. Jump from the edge while
+//   the beam is off. Jumping early falls short.
+//   205 a moving platform. It travels 4 tiles and comes back in 3 seconds.
+//   The pit is wider than a jump. Ride it. Running walks off the front.
+//   Jump near the far end. The floor there starts at 213.
+//   220 checkpoint
+//   230 a jump pad. The tower is columns 235-239, five tiles wide.
+//   The lift is column 240. It starts level with the tower, drops 5 tiles,
+//   then comes back. Step on while it is up.
+//   250, 256, 262, 268 crumble islands, one tile each, five empty between them.
+//   280 checkpoint
+//   290-329 a laser tunnel. The ceiling is rows 7-10, so its top is six
+//   tiles up and a jump cannot get on it. Twelve beams in five groups:
+//   294 297 | 301 302 304 | 308 311 | 315 316 318 | 322 325.
+//   Each group spans at most 3 tiles, so one off-window covers it.
+//   The pockets between groups are where you wait.
+//   336-376 a short-hop corridor. The ceiling spikes on row 9 are solid,
+//   so a held jump hits them. Floor spikes on row 12 every 3 tiles, 339 to 372.
+//   386 a jump pad. Orbs at 387 and 393. The pit is 387-399, longer than the
+//   pad alone can cross. Press jump in each ring. Landing starts at 400.
+//   406 one more laser, 412 the portal.
+const sciFiShowdown: LevelDef = {
+  id: "sci-fi-showdown",
+  title: "Sci-Fi Showdown",
+  theme: "neon",
+  panels: [
+    { kind: "experience", group: 0, index: 0 },
+    { kind: "experience", group: 0, index: 1 },
+  ],
+  signs: [
+    { c: 16, r: 11, text: "Laser. Wait until it is off." },
+    { c: 84, r: 11, text: "Jump, then press jump in the ring." },
+  ],
+  movers: [
+    { kind: "platform", c: 205, r: 13, axis: "x", tiles: 4, seconds: 3 },
+    { kind: "platform", c: 240, r: 8, axis: "y", tiles: 5, seconds: 4.5 },
+  ],
+  rows: [
+    "#............................................................................................................................................................................................................................................................................................................................................................................................................................#",
+    "#............................................................................................................................................................................................................................................................................................................................................................................................................................#",
+    "#............................................................................................................................................................................................................................................................................................................................................................................................................................#",
+    "#............................................................................................................................................................................................................................................................................................................................................................................................................................#",
+    "#............................................................................................................................................................................................................................................................................................................................................................................................................................#",
+    "#............................................................................................................................................................................................................................................................................................................................................................................................................................#",
+    "#.....................................................................................................................................|.....o................................................................................................................................................................................................................................................................................#",
+    "#.....................................................................................................................................|o..........................................................................................................................................................########################################.........................................................o.....o...................#",
+    "#.........................|..........................................................................................................||....................................................................................................#####..................................................########################################......#########################################.............................|......#",
+    "#.........................|..........................................................................................................||................................................|...................................................#####..................................................########################################......vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv.............................|......#",
+    "#.........................|..........................................................................................................||................................................|...................................................#####..................................................########################################............................................................................|......#",
+    "#.........................|.................................................................o.......o................................|.................................................|...................................................#####......................................................|..|...||.|...|..|...||.|...|..|................................................................................|......#",
+    "#.P.....I.................|.............J........J........J.............C...........................................C...............o|..................C.......I......................|....................................C.........J....#####........................................C.............|..|...||.|...|..|...||.|...|..|.............^..^..^..^..^..^..^..^..^..^..^..^.............J...................|.....O#",
+    "#########################################......###......###......####################################......##########################..............##################################.....###################........##################..........####.....x.....x.....x.....x.....#################################################################################################################.............##############",
+  ],
+};
+
 export const courses: Course[] = [
   {
     id: "first-level",
@@ -249,6 +327,7 @@ export const courses: Course[] = [
     audio: "04-at-the-speed-of-light.mp3",
     songUrl: "https://www.newgrounds.com/audio/listen/467339",
     section: "Experience, At Yale",
+    level: sciFiShowdown,
   },
   {
     id: "last-hope",

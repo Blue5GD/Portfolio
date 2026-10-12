@@ -29,7 +29,7 @@ import type { ContentRef, GameState } from "./types";
 //   loop.ts       steady 1/120s physics steps, drawn every frame
 //   physics.ts    running, jumping, and tile collision
 //   level.ts      turns the ASCII map into cells physics can look up
-//   levels.ts     the six courses; First Level through Mystic Mountains have maps
+//   levels.ts     the six courses; First Level through Sci-Fi Showdown have maps
 //   panels.ts     turns an info block into the dialog, using src/data
 //   audio.ts      one looping song per level
 //   storage.ts    saved unlocks, clears, attempts, mute, and volume

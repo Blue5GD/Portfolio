@@ -23,20 +23,25 @@ All of the text lives in `src/data/`. Classic mode and the game both read those 
 
 `/play` opens a level select. Clearing or skipping a level unlocks the next one. That progress is saved in the browser under the key `b5gd:progress`. The mute button is saved under `b5gd:muted`. The volume slider is saved under `b5gd:volume`.
 
-First Level, Lost World, and Mystic Mountains, in `src/game/levels.ts`, are the courses you can play. The other three cards are listed there too, without maps yet. Each string in `rows` is one row of the map. Row 0 is the top. Every row in a level must be the same length.
+First Level, Lost World, Mystic Mountains, and Sci-Fi Showdown, in `src/game/levels.ts`, are the courses you can play. Last Hope and The Final Battle are listed there too, without maps yet. Each string in `rows` is one row of the map. Row 0 is the top. Every row in a level must be the same length.
 
 ```text
 . empty     # block      ~ ice        = one-way platform
 ^ v < >     spikes (floor, ceiling, left, right)
 P start     C checkpoint   I info block   J jump pad   O end portal
-! falling spike     x crumble
+! falling spike     x crumble     o jump orb
+| vertical laser      - horizontal laser
 ```
 
 A `!` hangs until the cube enters that column, then it falls. It stays dangerous where it lands until you respawn. An `x` is solid until you have stood on it for a moment. It cracks, then falls. The hole under it is what hurts you.
 
-A moving platform is not a letter in the map. It is listed under `movers`. It is a single solid tile that goes out and comes back. Standing on it carries the cube. When the cube respawns, the platform snaps back to where it started. Mystic Mountains has one.
+An `o` is a ring. Touching it does nothing. Press jump while the cube overlaps it and it launches you, higher than a normal jump and lower than a pad. Letting go of jump does not change that height. Walk out of the ring and it can launch you again.
 
-An `I` tile opens a panel. On First Level those panels are About, then the three Featured items, in that order. On Lost World they are the three projects, newest first. On Mystic Mountains they are Science Olympiad, Mu Alpha Theta, Chess, and then Service. The words come from `src/data`. The game does not keep a second copy.
+`|` and `-` are lasers. A straight run of the same character is one beam. Every beam in a level shares one timer: off for 0.7 seconds, then on for 1.1 seconds. The beam only hurts you while it is on. Respawning restarts the timer at the start of the off time, so you do not appear inside a beam.
+
+A moving platform is not a letter in the map. It is listed under `movers`. It is a single solid tile that goes out and comes back. Standing on it carries the cube. When the cube respawns, the platform snaps back to where it started. Mystic Mountains has one. Sci-Fi Showdown has two: one that slides sideways, and one that moves up and down.
+
+An `I` tile opens a panel. On First Level those panels are About, then the three Featured items, in that order. On Lost World they are the three projects, newest first. On Mystic Mountains they are Science Olympiad, Mu Alpha Theta, Chess, and then Service. On Sci-Fi Showdown they are CourseTable, then Catalyst. The words come from `src/data`. The game does not keep a second copy.
 
 Warmup is still in `src/game/levels.ts`, but it is not on the level select. It is the old practice map (ice, jump pads, one-way platforms, wall spikes). Falling spikes and crumble blocks are used in Lost World.
 
