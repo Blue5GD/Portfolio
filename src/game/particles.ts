@@ -8,18 +8,22 @@ export function burst(
   x: number,
   y: number,
   reduced: boolean,
-  style: "death" | "win",
+  style: "death" | "win" | "finale",
 ): void {
-  const count = reduced ? 8 : style === "win" ? 28 : 18;
-  const life = style === "win" ? 0.8 : 0.5;
+  const counts = { death: 18, win: 28, finale: 90 };
+  const lives = { death: 0.5, win: 0.8, finale: 1.6 };
+  const spreads = { death: 200, win: 260, finale: 520 };
+  const count = reduced ? 8 : counts[style];
+  const life = lives[style];
+  const lift = style === "death" ? 80 : style === "win" ? 180 : 320;
   for (let i = 0; i < count; i++) {
     const angle = (i / count) * Math.PI * 2;
-    const speed = reduced ? 40 : 80 + Math.random() * (style === "win" ? 260 : 200);
+    const speed = reduced ? 40 : 80 + Math.random() * spreads[style];
     particles.push({
       x,
       y,
       vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - (style === "win" ? 180 : 80),
+      vy: Math.sin(angle) * speed - lift,
       size: 4 + Math.random() * 6,
       life,
       max: life,

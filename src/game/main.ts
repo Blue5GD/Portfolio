@@ -343,6 +343,17 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
       markCleared(progress, index, courses.length);
       saveProgress(progress);
       const following = courses[index + 1];
+      if (next.level.finale) {
+        fillPanel(dialogTitle, dialogBody, content, { kind: "contact" });
+        dialogTitle.textContent = "Level Complete!";
+        const runNote = document.createElement("p");
+        runNote.textContent = `${course.title} took ${next.attempts} attempts this run.`;
+        const totalNote = document.createElement("p");
+        totalNote.textContent = `Total attempts across every level: ${progress.attempts}.`;
+        dialogBody.prepend(runNote, totalNote);
+        openDialog("Level select", () => showSelect());
+        return;
+      }
       dialogTitle.textContent = `${course.title} clear`;
       dialogBody.replaceChildren();
       const note = document.createElement("p");

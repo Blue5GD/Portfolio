@@ -33,16 +33,20 @@ export type ContentRef =
   | { kind: "education" }
   | { kind: "contact" };
 
-/** Which palette and background a course uses. "bright" is First Level. "neon" is Sci-Fi Showdown. "dusk" is Last Hope. */
-export type ThemeId = "bright" | "ice" | "mist" | "neon" | "dusk";
+/**
+ * Which palette and background a course uses. "bright" is First Level. "neon" is Sci-Fi Showdown.
+ * "dusk" is Last Hope. "dark" is The Final Battle, lit only around the cube.
+ */
+export type ThemeId = "bright" | "ice" | "mist" | "neon" | "dusk" | "dark";
 
 /**
- * A moving platform. It is not a letter in the ASCII map.
+ * A moving platform or a saw. Neither is a letter in the ASCII map.
  * It starts at column `c`, row `r`, travels `tiles` away, then comes back.
- * `seconds` is the full round trip.
+ * `seconds` is the full round trip. A negative `tiles` travels left (or up).
+ * A platform is solid and carries the cube. A saw is not solid, and touching it kills.
  */
 export interface MoverDef {
-  kind: "platform";
+  kind: "platform" | "saw";
   c: number;
   r: number;
   axis: "x" | "y";
@@ -65,9 +69,9 @@ export interface Laser {
   length: number;
 }
 
-/** The live platform. `x` and `y` are the top-left, in pixels. */
+/** The live platform or saw. `x` and `y` are the top-left of its tile, in pixels. */
 export interface Mover {
-  kind: "platform";
+  kind: "platform" | "saw";
   axis: "x" | "y";
   originX: number;
   originY: number;
@@ -125,10 +129,12 @@ export interface Level {
   signs: Sign[];
   /** Map key "col,row" to an index in `panels`. */
   infoAt: Map<string, number>;
-  /** Moving platforms. Empty for courses that do not use one. */
+  /** Moving platforms and saws. Empty for courses that do not use one. */
   movers: MoverDef[];
   /** Laser beams gathered from `|` and `-` runs. */
   lasers: Laser[];
+  /** The last course. Its portal ends the game with a bigger burst and the Contact panel. */
+  finale: boolean;
 }
 
 export interface Player {

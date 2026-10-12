@@ -13,8 +13,10 @@ export interface LevelDef {
   signs?: Sign[];
   /** Omitted courses use the bright First Level palette. */
   theme?: ThemeId;
-  /** Moving platforms. They are not letters in `rows`. */
+  /** Moving platforms and saws. They are not letters in `rows`. */
   movers?: MoverDef[];
+  /** True for the last course only. */
+  finale?: boolean;
 }
 
 // `!` is a falling spike. `x` is a crumble block.
@@ -111,6 +113,7 @@ export function parseLevel(def: LevelDef): Level {
     infoAt,
     movers: checkMovers(def, width, height),
     lasers: findLasers(def.rows),
+    finale: def.finale ?? false,
   };
 }
 
@@ -150,27 +153,30 @@ function findLasers(rows: string[]): Laser[] {
   return lasers;
 }
 
-// The platform's path has to be empty tiles. A block on that path would
-// sit inside the platform, and the cube could get stuck between them.
+// The path has to stay on the map. A platform's path also has to be empty
+// tiles: a block on that path would sit inside the platform, and the cube
+// could get stuck between them. A saw is not solid, so it may pass through blocks.
 function checkMovers(def: LevelDef, width: number, height: number): MoverDef[] {
   const movers = def.movers ?? [];
   for (const mover of movers) {
-    if (mover.kind !== "platform") {
-      throw new Error(`Level ${def.id} has a mover that is not a platform.`);
+    if (mover.kind !== "platform" && mover.kind !== "saw") {
+      throw new Error(`Level ${def.id} has a mover that is not a platform or a saw.`);
     }
     if (mover.axis !== "x" && mover.axis !== "y") {
-      throw new Error(`Level ${def.id} has a platform with a bad axis.`);
+      throw new Error(`Level ${def.id} has a ${mover.kind} with a bad axis.`);
     }
-    if (!(mover.tiles > 0) || !(mover.seconds > 0)) {
-      throw new Error(`Level ${def.id} has a platform with no distance or no time.`);
+    if (mover.tiles === 0 || !Number.isFinite(mover.tiles) || !(mover.seconds > 0)) {
+      throw new Error(`Level ${def.id} has a ${mover.kind} with no distance or no time.`);
     }
-    const steps = Math.round(mover.tiles);
+    const steps = Math.round(Math.abs(mover.tiles));
+    const sign = mover.tiles < 0 ? -1 : 1;
     for (let i = 0; i <= steps; i++) {
-      const c = mover.axis === "x" ? mover.c + i : mover.c;
-      const r = mover.axis === "y" ? mover.r + i : mover.r;
+      const c = mover.axis === "x" ? mover.c + i * sign : mover.c;
+      const r = mover.axis === "y" ? mover.r + i * sign : mover.r;
       if (c < 0 || r < 0 || c >= width || r >= height) {
-        throw new Error(`Level ${def.id} platform path leaves the map at column ${c}, row ${r}.`);
+        throw new Error(`Level ${def.id} ${mover.kind} path leaves the map at column ${c}, row ${r}.`);
       }
+      if (mover.kind === "saw") continue;
       const ch = def.rows[r][c];
       if (ch !== ".") {
         throw new Error(

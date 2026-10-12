@@ -1,7 +1,7 @@
 import { drawCube } from "./drawCube";
 import { difficultyLabel, drawFace } from "./faces";
 import { spikeDir, tileAt, type SpikeDir } from "./level";
-import { laserActive, PHYSICS } from "./physics";
+import { laserActive, PHYSICS, warningActive } from "./physics";
 import { getTheme, shadeTheme, type Theme } from "./themes";
 import { TILE, type GameState } from "./types";
 
@@ -58,18 +58,23 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
   }
   ctx.restore();
 
+  // Last Hope and The Final Battle draw the cube again after their dark overlay.
+  const overlay = base.darkness > 0 || base.light > 0;
   ctx.save();
   ctx.translate(sx - state.camera.x, sy - state.camera.y);
   drawWorld(ctx, state, theme);
-  drawParticles(ctx, state);
-  // Last Hope draws the cube again after the dark overlay, so skip it here.
-  if (base.darkness <= 0 && state.phase !== "dead") {
-    const p = state.player;
-    // Drawn a little bigger than the 36px hitbox so the face reads on screen.
-    drawCube(ctx, p.x + p.w / 2, p.y + p.h / 2, 40, p.rot);
+  if (base.light <= 0) drawParticles(ctx, state);
+  if (!overlay) {
+    if (state.phase !== "dead") {
+      const p = state.player;
+      // Drawn a little bigger than the 36px hitbox so the face reads on screen.
+      drawCube(ctx, p.x + p.w / 2, p.y + p.h / 2, 40, p.rot);
+    }
+    drawAttempt(ctx, state);
   }
-  if (base.darkness <= 0) drawAttempt(ctx, state);
   ctx.restore();
+
+  if (base.light > 0) drawLight(ctx, state, theme, sx, sy);
 
   if (base.darkness > 0) {
     ctx.fillStyle = `rgba(5, 2, 10, ${progress * base.darkness})`;
@@ -163,6 +168,146 @@ function drawRedAccents(ctx: CanvasRenderingContext2D, state: GameState): void {
   }
 }
 
+// The Final Battle. Everything already drawn is covered by black, except a
+// circle around the cube. Then the things that glow are drawn on top:
+// spears (spikes), lit lasers, and markers fade out with distance, so they
+// show a little past the light. Blocks, pits, and saws do not glow.
+function drawLight(ctx: CanvasRenderingContext2D, state: GameState, theme: Theme, sx: number, sy: number): void {
+  const { viewW, viewH, camera: cam, level } = state;
+  const p = state.player;
+  const cx = p.x + p.w / 2;
+  const cy = p.y + p.h / 2;
+  const radius = theme.light;
+
+  const lx = cx - cam.x + sx;
+  const ly = cy - cam.y + sy;
+  const shade = ctx.createRadialGradient(lx, ly, radius * 0.5, lx, ly, radius * 1.05);
+  shade.addColorStop(0, "rgba(0, 0, 0, 0)");
+  shade.addColorStop(0.5, "rgba(0, 0, 0, 0.3)");
+  shade.addColorStop(1, "rgba(1, 1, 4, 0.985)");
+  ctx.fillStyle = shade;
+  ctx.fillRect(0, 0, viewW, viewH);
+
+  ctx.save();
+  ctx.translate(sx - cam.x, sy - cam.y);
+  // Full brightness inside the light, then gone by 1.9 radii.
+  const glow = (x: number, y: number) => {
+    const d = Math.hypot(x + TILE / 2 - cx, y + TILE / 2 - cy);
+    return d <= radius ? 1 : Math.max(0, 1 - (d - radius) / (radius * 0.9));
+  };
+
+  const c0 = Math.max(0, Math.floor(cam.x / TILE) - 1);
+  const c1 = Math.min(level.width - 1, Math.ceil((cam.x + viewW) / TILE) + 1);
+  const r0 = Math.max(0, Math.floor(cam.y / TILE) - 1);
+  const r1 = Math.min(level.height - 1, Math.ceil((cam.y + viewH) / TILE) + 1);
+  for (let r = r0; r <= r1; r++) {
+    for (let c = c0; c <= c1; c++) {
+      const ch = tileAt(level, c, r);
+      const x = c * TILE;
+      const y = r * TILE;
+      const dir = spikeDir(ch);
+      const isMarker = ch === "C" || ch === "I" || ch === "J" || ch === "o" || ch === "O";
+      if (!dir && !isMarker) continue;
+      const alpha = glow(x, y);
+      if (alpha <= 0) continue;
+      ctx.globalAlpha = alpha;
+      if (dir) drawSpear(ctx, x, y, dir, theme);
+      else if (ch === "C") drawCheckpoint(ctx, x, y, isActiveCheckpoint(state, c, r));
+      else if (ch === "I") drawInfo(ctx, x, y, state.collected.has(`${c},${r}`));
+      else if (ch === "J") drawPad(ctx, x, y, state);
+      else if (ch === "o") drawOrb(ctx, x, y, state);
+      else drawPortal(ctx, x, y, state);
+    }
+  }
+  for (const spike of state.fallingSpikes) {
+    if (spike.y > level.height * TILE) continue;
+    const alpha = glow(spike.c * TILE, spike.y);
+    if (alpha <= 0) continue;
+    ctx.globalAlpha = alpha;
+    drawSpear(ctx, spike.c * TILE, spike.y, "down", theme);
+  }
+  ctx.globalAlpha = 1;
+  if (laserActive(state.laserClock)) drawLasers(ctx, state);
+
+  drawParticles(ctx, state);
+  if (state.phase !== "dead") drawCube(ctx, cx, cy, 40, p.rot);
+  drawAttempt(ctx, state);
+  ctx.restore();
+
+  if (warningActive(state, radius * 1.5)) {
+    ctx.save();
+    ctx.fillStyle = "rgba(60, 255, 120, 0.14)";
+    ctx.fillRect(0, 0, viewW, viewH);
+    ctx.strokeStyle = "rgba(60, 255, 120, 0.8)";
+    ctx.lineWidth = 10;
+    ctx.strokeRect(5, 5, viewW - 10, viewH - 10);
+    ctx.restore();
+  }
+}
+
+// A spear: a thin shaft from the base, then a sharp head at the point.
+// Drawn pointing up, then turned. The hitbox is the same small box as any spike.
+function drawSpear(ctx: CanvasRenderingContext2D, x: number, y: number, dir: SpikeDir, theme: Theme): void {
+  const turn = { up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 }[dir];
+  ctx.save();
+  ctx.translate(x + TILE / 2, y + TILE / 2);
+  ctx.rotate(turn);
+  const outline = () => {
+    ctx.beginPath();
+    ctx.moveTo(-3, 19);
+    ctx.lineTo(-3, -2);
+    ctx.lineTo(-11, -2);
+    ctx.lineTo(0, -19);
+    ctx.lineTo(11, -2);
+    ctx.lineTo(3, -2);
+    ctx.lineTo(3, 19);
+    ctx.closePath();
+  };
+  outline();
+  ctx.strokeStyle = "rgba(95, 227, 255, 0.25)";
+  ctx.lineWidth = 9;
+  ctx.lineJoin = "round";
+  ctx.stroke();
+  outline();
+  ctx.fillStyle = theme.spike;
+  ctx.fill();
+  ctx.strokeStyle = theme.spikeEdge;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+}
+
+// A round blade with teeth. It spins faster than the cube can roll.
+function drawSaw(ctx: CanvasRenderingContext2D, x: number, y: number, state: GameState): void {
+  const spin = state.reducedMotion ? 0 : state.time * 9;
+  const teeth = 10;
+  ctx.save();
+  ctx.translate(x + TILE / 2, y + TILE / 2);
+  ctx.rotate(spin);
+  ctx.beginPath();
+  for (let i = 0; i < teeth * 2; i++) {
+    const angle = (i / (teeth * 2)) * Math.PI * 2;
+    const rad = i % 2 === 0 ? 21 : 15;
+    ctx.lineTo(Math.cos(angle) * rad, Math.sin(angle) * rad);
+  }
+  ctx.closePath();
+  ctx.fillStyle = "#c9d6e3";
+  ctx.strokeStyle = "#000000";
+  ctx.lineWidth = 2;
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, 0, 9, 0, Math.PI * 2);
+  ctx.fillStyle = "#3a1018";
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, 0, 3, 0, Math.PI * 2);
+  ctx.fillStyle = "#ff4d6a";
+  ctx.fill();
+  ctx.restore();
+}
+
 function drawWorld(ctx: CanvasRenderingContext2D, state: GameState, theme: Theme): void {
   const level = state.level;
   const cam = state.camera;
@@ -191,7 +336,8 @@ function drawWorld(ctx: CanvasRenderingContext2D, state: GameState, theme: Theme
       else if (ch === "J") drawPad(ctx, x, y, state);
       else if (ch === "o") drawOrb(ctx, x, y, state);
       else if (ch === "O") drawPortal(ctx, x, y, state);
-      else {
+      else if (theme.light <= 0) {
+        // In the dark, spikes are drawn as glowing spears after the overlay (see drawLight).
         const dir = spikeDir(ch);
         if (dir === "down" && theme.icicles) drawIcicle(ctx, x, y, theme);
         else if (dir) drawSpike(ctx, x, y, dir, theme);
@@ -203,19 +349,25 @@ function drawWorld(ctx: CanvasRenderingContext2D, state: GameState, theme: Theme
     if (block.phase === "gone") continue;
     drawCrumble(ctx, block.c * TILE, block.y, block.phase === "firm" && block.stood >= PHYSICS.crumbleCrack, theme);
   }
-  for (const mover of state.movers) drawPlatform(ctx, mover.x, mover.y, theme);
+  for (const mover of state.movers) {
+    if (mover.kind === "saw") drawSaw(ctx, mover.x, mover.y, state);
+    else drawPlatform(ctx, mover.x, mover.y, theme);
+  }
   drawLasers(ctx, state);
 
   for (const spike of state.fallingSpikes) {
-    if (spike.y > level.height * TILE) continue;
+    if (theme.light > 0 || spike.y > level.height * TILE) continue;
     if (theme.icicles) drawIcicle(ctx, spike.c * TILE, spike.y, theme);
     else drawSpike(ctx, spike.c * TILE, spike.y, "down", theme);
   }
+  drawSigns(ctx, state);
+}
 
+function drawSigns(ctx: CanvasRenderingContext2D, state: GameState): void {
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
   ctx.font = "15px Inter, system-ui, sans-serif";
-  for (const sign of level.signs) {
+  for (const sign of state.level.signs) {
     const x = sign.c * TILE + TILE / 2;
     const y = sign.r * TILE;
     outlined(ctx, sign.text, x, y, "#eaf6ff");

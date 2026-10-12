@@ -5,6 +5,7 @@ import type { ThemeId } from "./types";
 // Mystic Mountains uses "mist": violet-grey stone, drifting fog, and motes.
 // Sci-Fi Showdown uses "neon": magenta edges, a cyan spike glow, and speed streaks.
 // Last Hope uses "dusk": purple that fades toward black, then deep red.
+// The Final Battle uses "dark": black, lit only near the cube, with cyan spears for spikes.
 
 export interface Theme {
   id: ThemeId;
@@ -42,6 +43,11 @@ export interface Theme {
    * Ignored when `darkness` is 0.
    */
   redAt: number;
+  /**
+   * Radius in pixels of the only lit area, a circle around the cube.
+   * 0 means the whole screen is lit. The Final Battle uses about 5 tiles.
+   */
+  light: number;
 }
 
 const THEMES: Record<ThemeId, Theme> = {
@@ -66,6 +72,7 @@ const THEMES: Record<ThemeId, Theme> = {
     ash: false,
     darkness: 0,
     redAt: 1,
+    light: 0,
   },
   ice: {
     id: "ice",
@@ -88,6 +95,7 @@ const THEMES: Record<ThemeId, Theme> = {
     ash: false,
     darkness: 0,
     redAt: 1,
+    light: 0,
   },
   mist: {
     id: "mist",
@@ -110,6 +118,7 @@ const THEMES: Record<ThemeId, Theme> = {
     ash: false,
     darkness: 0,
     redAt: 1,
+    light: 0,
   },
   neon: {
     id: "neon",
@@ -132,6 +141,7 @@ const THEMES: Record<ThemeId, Theme> = {
     ash: false,
     darkness: 0,
     redAt: 1,
+    light: 0,
   },
   dusk: {
     id: "dusk",
@@ -154,6 +164,30 @@ const THEMES: Record<ThemeId, Theme> = {
     ash: true,
     darkness: 0.75,
     redAt: 0.6,
+    light: 0,
+  },
+  dark: {
+    id: "dark",
+    sky: ["#020308", "#04060f", "#010104"],
+    pit: "#000000",
+    shard: "rgba(80, 200, 255, 0.04)",
+    block: "#0a0f1e",
+    blockEdge: "#3f6f9a",
+    ice: "#bfe6ff",
+    iceEdge: "#ffffff",
+    spike: "#06223a",
+    spikeEdge: "#5fe3ff",
+    oneWay: "#5fe3ff",
+    oneWayEdge: "#02121e",
+    icicles: false,
+    snow: false,
+    fog: false,
+    motes: false,
+    streaks: false,
+    ash: false,
+    darkness: 0,
+    redAt: 1,
+    light: 200,
   },
 };
 

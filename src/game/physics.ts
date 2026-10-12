@@ -43,6 +43,10 @@ export const PHYSICS = {
   // A crumble cracks halfway, then stops being solid. Stepping off resets the timer.
   crumbleCrack: 0.2,
   crumbleBreak: 0.4,
+  // A saw's hitbox is a centered square half a tile wide, smaller than the drawn blade.
+  sawHit: 20,
+  // The green warning starts this long before a laser turns on or a saw reaches the cube.
+  warnAhead: 0.25,
 };
 
 export function createGame(level: Level, reducedMotion: boolean): GameState {
@@ -220,7 +224,13 @@ export function step(state: GameState, input: Input, dt: number): void {
   // The feet have to leave the map. Checking the top of the cube instead
   // lets you sink a full body-height into a pit before the attempt ends.
   const worldBottom = state.level.height * TILE;
-  if (p.y + p.h > worldBottom || touchingSpike(state.level, p) || touchingFallingSpike(state) || touchingLaser(state)) {
+  if (
+    p.y + p.h > worldBottom ||
+    touchingSpike(state.level, p) ||
+    touchingFallingSpike(state) ||
+    touchingLaser(state) ||
+    touchingSaw(state)
+  ) {
     die(state);
     finishFrame(state, dt);
     return;
@@ -356,6 +366,7 @@ function overlappingPlatforms(state: GameState, p: Player): Box[] {
   const right = p.x + p.w;
   const bottom = p.y + p.h;
   for (const mover of state.movers) {
+    if (mover.kind !== "platform") continue;
     // Standing exactly on the top is not an overlap. Gravity sinks the cube
     // a fraction of a pixel, and that is what counts as a landing.
     if (right <= mover.x + 0.001 || p.x >= mover.x + TILE - 0.001) continue;
@@ -369,7 +380,7 @@ function makeMover(def: MoverDef): Mover {
   const x = def.c * TILE;
   const y = def.r * TILE;
   return {
-    kind: "platform",
+    kind: def.kind,
     axis: def.axis,
     originX: x,
     originY: y,
@@ -390,20 +401,73 @@ function shuttle(clock: number, period: number): number {
   return 2 - t * 2;
 }
 
+/** Top-left of a mover's tile at any point on its clock. */
+function moverAt(mover: Mover, clock: number): { x: number; y: number } {
+  const off = shuttle(clock, mover.period) * mover.distance;
+  if (mover.axis === "x") return { x: mover.originX + off, y: mover.originY };
+  return { x: mover.originX, y: mover.originY + off };
+}
+
 function updateMovers(state: GameState, dt: number): void {
   for (const mover of state.movers) {
     mover.prevX = mover.x;
     mover.prevY = mover.y;
     mover.clock += dt;
-    const off = shuttle(mover.clock, mover.period) * mover.distance;
-    if (mover.axis === "x") {
-      mover.x = mover.originX + off;
-      mover.y = mover.originY;
-    } else {
-      mover.x = mover.originX;
-      mover.y = mover.originY + off;
+    const at = moverAt(mover, mover.clock);
+    mover.x = at.x;
+    mover.y = at.y;
+  }
+}
+
+function sawTouches(p: Player, x: number, y: number, grow: number): boolean {
+  const size = PHYSICS.sawHit + grow * 2;
+  const sx = x + (TILE - size) / 2;
+  const sy = y + (TILE - size) / 2;
+  return p.x < sx + size && p.x + p.w > sx && p.y < sy + size && p.y + p.h > sy;
+}
+
+function touchingSaw(state: GameState): boolean {
+  for (const mover of state.movers) {
+    if (mover.kind === "saw" && sawTouches(state.player, mover.x, mover.y, 0)) return true;
+  }
+  return false;
+}
+
+/**
+ * True for the quarter second before a laser near the cube turns on, or before
+ * a saw reaches the cube where it stands. The Final Battle flashes green for it.
+ * `reach` is how far from the cube (in pixels) a beam still counts as near.
+ */
+export function warningActive(state: GameState, reach: number): boolean {
+  if (state.phase !== "play") return false;
+  const p = state.player;
+  const ahead = PHYSICS.warnAhead;
+
+  const period = PHYSICS.laserOff + PHYSICS.laserOn;
+  const phase = state.laserClock % period;
+  if (phase < PHYSICS.laserOff && phase >= PHYSICS.laserOff - ahead) {
+    const cx = p.x + p.w / 2;
+    const cy = p.y + p.h / 2;
+    for (const beam of state.level.lasers) {
+      const x0 = beam.c * TILE;
+      const y0 = beam.r * TILE;
+      const x1 = x0 + (beam.axis === "x" ? beam.length : 1) * TILE;
+      const y1 = y0 + (beam.axis === "y" ? beam.length : 1) * TILE;
+      const dx = Math.max(x0 - cx, 0, cx - x1);
+      const dy = Math.max(y0 - cy, 0, cy - y1);
+      if (dx * dx + dy * dy <= reach * reach) return true;
     }
   }
+
+  for (const mover of state.movers) {
+    if (mover.kind !== "saw") continue;
+    // Not already touching. Touching within the next quarter second, with some room to spare.
+    for (let t = ahead / 4; t <= ahead + 0.001; t += ahead / 4) {
+      const at = moverAt(mover, mover.clock + t);
+      if (sawTouches(p, at.x, at.y, 8)) return true;
+    }
+  }
+  return false;
 }
 
 // Carry only when the cube's center is on the platform. Touching the side
@@ -414,6 +478,7 @@ function carryMovers(state: GameState, wasGrounded: boolean): void {
   const mid = p.x + p.w / 2;
   const feet = p.y + p.h;
   for (const mover of state.movers) {
+    if (mover.kind !== "platform") continue;
     if (Math.abs(feet - mover.prevY) > 2) continue;
     if (mid < mover.prevX || mid > mover.prevX + TILE) continue;
     p.x += mover.x - mover.prevX;
@@ -499,7 +564,7 @@ function touchMarkers(state: GameState, jumpEdge: boolean): void {
       }
       if (ch === "O" && state.phase === "play") {
         state.phase = "won";
-        burst(state.particles, p.x + p.w / 2, p.y + p.h / 2, state.reducedMotion, "win");
+        burst(state.particles, p.x + p.w / 2, p.y + p.h / 2, state.reducedMotion, state.level.finale ? "finale" : "win");
         state.onWin();
       }
     }
