@@ -23,17 +23,20 @@ All of the text lives in `src/data/`. Classic mode and the game both read those 
 
 `/play` opens a level select. Clearing or skipping a level unlocks the next one. That progress is saved in the browser under the key `b5gd:progress`. The mute button is saved under `b5gd:muted`. The volume slider is saved under `b5gd:volume`.
 
-First Level, in `src/game/levels.ts`, is the course you can play. The other five cards are listed there too, without maps yet. Each string in `rows` is one row of the map. Row 0 is the top. Every row in a level must be the same length.
+First Level and Lost World, in `src/game/levels.ts`, are the courses you can play. The other four cards are listed there too, without maps yet. Each string in `rows` is one row of the map. Row 0 is the top. Every row in a level must be the same length.
 
 ```text
 . empty     # block      ~ ice        = one-way platform
 ^ v < >     spikes (floor, ceiling, left, right)
 P start     C checkpoint   I info block   J jump pad   O end portal
+! falling spike     x crumble
 ```
 
-An `I` tile opens a panel. On First Level those panels are About, then the three Featured items, in that order. The words come from `src/data`. The game does not keep a second copy.
+A `!` hangs until the cube enters that column, then it falls. It stays dangerous where it lands until you respawn. An `x` is solid until you have stood on it for a moment. It cracks, then falls. The hole under it is what hurts you.
 
-Warmup is still in `src/game/levels.ts`, but it is not on the level select. It is the old practice map, and it still contains every tile the engine knows (ice, jump pads, one-way platforms, wall spikes). New obstacle types for the later levels are written up in `docs/PLAN.md` and are not in First Level.
+An `I` tile opens a panel. On First Level those panels are About, then the three Featured items, in that order. On Lost World they are the three projects, newest first. The words come from `src/data`. The game does not keep a second copy.
+
+Warmup is still in `src/game/levels.ts`, but it is not on the level select. It is the old practice map (ice, jump pads, one-way platforms, wall spikes). Falling spikes and crumble blocks are used in Lost World.
 
 ## Music
 

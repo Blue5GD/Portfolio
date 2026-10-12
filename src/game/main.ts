@@ -29,7 +29,7 @@ import type { ContentRef, GameState } from "./types";
 //   loop.ts       steady 1/120s physics steps, drawn every frame
 //   physics.ts    running, jumping, and tile collision
 //   level.ts      turns the ASCII map into cells physics can look up
-//   levels.ts     the six courses; only First Level has a map
+//   levels.ts     the six courses; First Level and Lost World have maps
 //   panels.ts     turns an info block into the dialog, using src/data
 //   audio.ts      one looping song per level
 //   storage.ts    saved unlocks, clears, attempts, mute, and volume
