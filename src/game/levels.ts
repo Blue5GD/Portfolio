@@ -1,9 +1,9 @@
 import type { LevelDef } from "./level";
 import type { DifficultyId } from "./types";
 
-// /play shows a level select built from `courses`. First Level and Lost World
-// have maps. The other cards are here so unlocking them has a place to land;
-// their rows get written in later.
+// /play shows a level select built from `courses`. First Level through Mystic
+// Mountains have maps. The other cards are here so unlocking them has a place
+// to land; their rows get written in later.
 //
 // Tile key:
 //   . empty    # block     ~ ice       = one-way platform
@@ -11,6 +11,7 @@ import type { DifficultyId } from "./types";
 //   P start    C checkpoint    I info block    J jump pad    O end portal
 //   ! falling spike (drops when the cube enters that column)
 //   x crumble (solid until you stand on it, then it falls)
+// A moving platform is not a letter. It is listed on the level as `movers`.
 //
 // Row 0 is the top. Every row in a level is the same length.
 
@@ -136,6 +137,75 @@ const lostWorld: LevelDef = {
   ],
 };
 
+// Mystic Mountains. Harder than Lost World. The gap jumps need a held jump
+// from the edge. The spike corridors need the opposite: a very short hop.
+// The second drop kills you if you keep holding left or right. There is no ice.
+// A full jump still clears about five tiles. A pit of six is not jumpable.
+// Columns:
+//   0 wall, 2 start, 8 Science Olympiad
+//   18-19 a shaft 2 tiles wide. Spikes on the left wall (column 17, rows 4-6).
+//   Columns 20-23 are stone, so sliding on the right side is safe.
+//   Steering into the spikes during the drop kills you.
+//   28 checkpoint, 38 Mu Alpha Theta, on the ledge after that drop
+//   50-59 a low ceiling. Walking fits. Jumping bonks.
+//   Ceiling spikes are on row 3, columns 66-106, with blocks on row 2.
+//   Floor spikes on row 6 every 3 tiles, 69 to 102. Each landing between
+//   two spikes is two tiles of floor, so every hop has to be short.
+//   Two empty rows between each pair. One empty row is about a 1.5 block
+//   opening, but a tap cannot clear it, so this is the tightest that works.
+//   A short tap fits. Holding the jump hits the ceiling spike.
+//   116 starts four gaps of 5 onto ledges of 4, then one more gap of 5
+//   onto the runway at 157. Leave from the edge and hold the jump.
+//   161 the lip. The hole is column 162, one tile wide.
+//   Rows 8-9 are stone, so a run stops there. Rows 10-13 are spikes
+//   on both walls. Let go of left and right before those spikes.
+//   170 checkpoint, 180 Chess, on the bottom ledge
+//   194-203 a pit 10 tiles wide. The platform starts at column 194, row 15,
+//   and travels 4 tiles. Rows 11-13 over columns 194-196 are a ceiling,
+//   so the pit cannot be jumped. The far floor starts at 204.
+//   A full jump only reaches it near the far end of the platform.
+//   Then three more gaps of 5 onto ledges of 4, and one gap of 5
+//   onto the final floor at 244.
+//   Eight floor spikes on row 14, three tiles apart, 250 to 271.
+//   Ceiling blocks are on row 10, spikes on row 11, columns 247-274.
+//   Two empty rows between each pair, same tap as the first corridor.
+//   281 Service, 288 portal
+const mysticMountains: LevelDef = {
+  id: "mystic-mountains",
+  title: "Mystic Mountains",
+  theme: "mist",
+  panels: [
+    { kind: "experience", group: 1, index: 0 },
+    { kind: "experience", group: 1, index: 1 },
+    { kind: "experience", group: 1, index: 2 },
+    { kind: "service" },
+  ],
+  signs: [
+    { c: 14, r: 1, text: "Left wall has spikes." },
+    { c: 186, r: 14, text: "Ride it. Jump at the far end." },
+  ],
+  // One tile. It travels 4 tiles to the right, then comes back, in 4 seconds.
+  movers: [{ kind: "platform", c: 194, r: 15, axis: "x", tiles: 4, seconds: 4 }],
+  rows: [
+    "#...................####...........................................................................................................................................##.............................................................................................................................#",
+    "#.P.....I...........####...........................................................................................................................................##.............................................................................................................................#",
+    "##################..####..........................................#########################################........................................................##.............................................................................................................................#",
+    "##################..####..........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv........................................................##.............................................................................................................................#",
+    "#################>..####...........................................................................................................................................##.............................................................................................................................#",
+    "#################>..####..........................##########.......................................................................................................##.............................................................................................................................#",
+    "#################>..........C.........I..............................^..^..^..^..^..^..^..^..^..^..^..^............................................................##.............................................................................................................................#",
+    "####################################################################################################################.....####.....####.....####.....####.....#####.##.............................................................................................................................#",
+    "#################...............................................................................................................................................##.###............................................................................................................................#",
+    "#################...............................................................................................................................................##.###............................................................................................................................#",
+    "#################...............................................................................................................................................#>.<##.................................................................................############################...............#",
+    "#################...............................................................................................................................................#>.<##............................###..................................................vvvvvvvvvvvvvvvvvvvvvvvvvvvv...............#",
+    "#################...............................................................................................................................................#>.<##............................###.............................................................................................#",
+    "#################...............................................................................................................................................#>.<##............................###.............................................................................................#",
+    "#################.........................................................................................................................................................C.........I.....................................................................^..^..^..^..^..^..^..^.........I......O.#",
+    "#################................................................................................................................................................#################################..........########.....####.....####.....####.....###############################################",
+  ],
+};
+
 export const courses: Course[] = [
   {
     id: "first-level",
@@ -168,6 +238,7 @@ export const courses: Course[] = [
     audio: "03-the-falling-mysts.mp3",
     songUrl: "https://www.newgrounds.com/audio/listen/508568",
     section: "Experience, High School",
+    level: mysticMountains,
   },
   {
     id: "sci-fi-showdown",
