@@ -84,13 +84,14 @@ const gameContent = {
         aria-label="First Level. Arrow keys or W A S D to move and jump. R restarts at the last checkpoint. Escape pauses."
       ></canvas>
       <p id="game-status" class="sr-only" aria-live="polite"></p>
-      <p class="help">Arrows or WASD, hold jump. R restarts. Esc pauses. M mutes. The slider sets volume.</p>
+      <p id="game-help" class="help">Arrows or WASD, hold jump. R restarts. Esc pauses. M mutes. The slider sets volume.</p>
       <div class="hud-actions">
         <label class="volume">
           Volume
           <input type="range" min="0" max="100" step="1" value="60" data-volume aria-label="Music volume" />
         </label>
         <button id="mute-hud" class="gd-btn gd-btn--alt" type="button" data-mute aria-pressed="false">Mute</button>
+        <button id="practice-btn" class="gd-btn gd-btn--alt" type="button" aria-pressed="false">Practice</button>
         <button id="skip-btn" class="gd-btn gd-btn--alt" type="button">Skip level</button>
         <button id="pause-btn" class="gd-btn gd-btn--alt" type="button">Pause</button>
       </div>
@@ -286,6 +287,14 @@ const gameContent = {
 
   .hud-actions .volume input[type="range"] {
     width: 6.2rem;
+  }
+
+  #practice-btn[aria-pressed="true"] {
+    color: var(--bg-deep);
+    background: #7dff6a;
+    box-shadow:
+      0 0 12px rgba(125, 255, 106, 0.45),
+      0 4px 0 #000;
   }
 
   .sr-only {

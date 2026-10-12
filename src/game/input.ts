@@ -22,6 +22,8 @@ export function attachInput(blocked: () => boolean, onMute: () => void): { input
     jumpPressed: false,
     restart: false,
     pausePressed: false,
+    placeCheckpoint: false,
+    removeCheckpoint: false,
   };
 
   function sync() {
@@ -45,6 +47,15 @@ export function attachInput(blocked: () => boolean, onMute: () => void): { input
     // Held arrows would otherwise scroll the page.
     if (isGameKey(e.code) && !onButton && !blocked()) e.preventDefault();
     if (e.repeat || onButton || blocked()) return;
+
+    if (e.code === "KeyZ") {
+      input.placeCheckpoint = true;
+      return;
+    }
+    if (e.code === "KeyX") {
+      input.removeCheckpoint = true;
+      return;
+    }
 
     down.add(e.code);
     sync();

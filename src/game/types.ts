@@ -184,6 +184,10 @@ export interface Input {
   jumpPressed: boolean;
   restart: boolean;
   pausePressed: boolean;
+  /** True for one step after Z. Only used while Practice mode is on. */
+  placeCheckpoint: boolean;
+  /** True for one step after X. Removes the newest practice checkpoint. */
+  removeCheckpoint: boolean;
 }
 
 /** Face drawn on the level card and the pause screen. Order is easiest to hardest. */
@@ -198,6 +202,13 @@ export interface GameState {
   /** "menu" is Esc. "dialog" is an info box. Win is its own phase. */
   pauseReason: "menu" | "dialog" | null;
   checkpoint: { x: number; y: number };
+  /**
+   * Practice mode is optional. While it is on, Z pushes the cube's position
+   * onto this list and X pops the last one. Deaths use the newest entry.
+   * The level's own checkpoints stay in `checkpoint`.
+   */
+  practice: boolean;
+  practicePoints: { x: number; y: number }[];
   attempts: number;
   camera: { x: number; y: number };
   cameraReady: boolean;

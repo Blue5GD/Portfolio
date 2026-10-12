@@ -50,10 +50,12 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   const noticeOk = document.querySelector<HTMLButtonElement>("#notice-ok");
   const noticeCancel = document.querySelector<HTMLButtonElement>("#notice-cancel");
   const pauseBtn = document.querySelector<HTMLButtonElement>("#pause-btn");
+  const practiceBtn = document.querySelector<HTMLButtonElement>("#practice-btn");
   const skipBtn = document.querySelector<HTMLButtonElement>("#skip-btn");
   const resetBtn = document.querySelector<HTMLButtonElement>("#reset-progress");
   const creditsBtn = document.querySelector<HTMLButtonElement>("#credits-btn");
   const status = document.querySelector<HTMLElement>("#game-status");
+  const help = document.querySelector<HTMLElement>("#game-help");
   const muteButtons = [
     ...document.querySelectorAll<HTMLButtonElement>("[data-mute]"),
   ];
@@ -75,10 +77,12 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     !noticeOk ||
     !noticeCancel ||
     !pauseBtn ||
+    !practiceBtn ||
     !skipBtn ||
     !resetBtn ||
     !creditsBtn ||
     !status ||
+    !help ||
     muteButtons.length === 0 ||
     volumeInputs.length === 0
   ) {
@@ -97,7 +101,9 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   const dialogOk: HTMLButtonElement = noticeOk;
   const dialogCancel: HTMLButtonElement = noticeCancel;
   const pause: HTMLButtonElement = pauseBtn;
+  const practice: HTMLButtonElement = practiceBtn;
   const live: HTMLElement = status;
+  const helpEl: HTMLElement = help;
 
   let playing = false;
   let currentIndex = -1;
@@ -306,6 +312,8 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     input.jumpPressed = false;
     input.restart = false;
     input.pausePressed = false;
+    input.placeCheckpoint = false;
+    input.removeCheckpoint = false;
   }
 
   function startLevel(index: number) {
@@ -443,6 +451,11 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     // Focus would stay on this button, and keys are ignored while a button is focused.
     canvas.focus();
   });
+  practice.addEventListener("click", () => {
+    if (!state || dialog.open || state.phase === "won") return;
+    state.practice = !state.practice;
+    canvas.focus();
+  });
   skipBtn.addEventListener("click", skipLevel);
   for (const button of muteButtons) button.addEventListener("click", toggleMute);
   for (const input of volumeInputs) input.addEventListener("input", onVolumeInput);
@@ -508,7 +521,16 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     if (pause.textContent !== label) pause.textContent = label;
     pause.setAttribute("aria-pressed", paused ? "true" : "false");
 
+    const practicing = state.practice;
+    practice.textContent = practicing ? "Practice on" : "Practice";
+    practice.setAttribute("aria-pressed", practicing ? "true" : "false");
+    const helpText = practicing
+      ? "Practice is on. Z places a checkpoint. X removes the last one. R restarts there."
+      : "Arrows or WASD, hold jump. R restarts. Esc pauses. M mutes. The slider sets volume.";
+    if (helpEl.textContent !== helpText) helpEl.textContent = helpText;
+
     let message = `Attempt ${state.attempts}.`;
+    if (practicing) message = `Practice mode. ${state.practicePoints.length} placed. ${message}`;
     if (state.phase === "dead") message = `Crashed. ${message}`;
     else if (paused) message = `Paused. ${difficultyLabel(state.difficulty)}.`;
     else if (state.phase === "won") message = `${state.level.title} clear. Attempts this run: ${state.attempts}.`;

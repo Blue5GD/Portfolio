@@ -56,6 +56,8 @@ export function createGame(level: Level, reducedMotion: boolean): GameState {
     phase: "play",
     pauseReason: null,
     checkpoint: { ...level.start },
+    practice: false,
+    practicePoints: [],
     attempts: 1,
     camera: { x: 0, y: 0 },
     cameraReady: false,
@@ -85,6 +87,14 @@ export function createGame(level: Level, reducedMotion: boolean): GameState {
   return state;
 }
 
+/** Where a death or an R restart puts the cube. Practice checkpoints win while that mode is on. */
+export function spawnAt(state: GameState): { x: number; y: number } {
+  if (state.practice && state.practicePoints.length > 0) {
+    return state.practicePoints[state.practicePoints.length - 1];
+  }
+  return state.checkpoint;
+}
+
 /** Put the cube back on the current checkpoint. Passing true uses up an attempt. */
 export function respawn(state: GameState, countAttempt: boolean): void {
   if (countAttempt) {
@@ -92,8 +102,9 @@ export function respawn(state: GameState, countAttempt: boolean): void {
     state.onAttempt();
   }
   const p = state.player;
-  p.x = state.checkpoint.x;
-  p.y = state.checkpoint.y;
+  const spawn = spawnAt(state);
+  p.x = spawn.x;
+  p.y = spawn.y;
   p.vx = 0;
   p.vy = 0;
   p.rot = 0;
@@ -115,6 +126,7 @@ export function respawn(state: GameState, countAttempt: boolean): void {
 export function resetRun(state: GameState): void {
   state.attempts = 1;
   state.checkpoint = { ...state.level.start };
+  state.practicePoints.length = 0;
   state.collected.clear();
   state.particles.length = 0;
   state.shake = 0;
@@ -139,6 +151,19 @@ export function step(state: GameState, input: Input, dt: number): void {
       state.phase = "play";
       state.pauseReason = null;
     }
+  }
+
+  // Z and X are edges, like jump. Always clear them, or a press during a
+  // dialog would place a checkpoint the moment the dialog closes.
+  if (input.placeCheckpoint) {
+    input.placeCheckpoint = false;
+    if (state.practice && state.phase === "play") {
+      state.practicePoints.push({ x: state.player.x, y: state.player.y });
+    }
+  }
+  if (input.removeCheckpoint) {
+    input.removeCheckpoint = false;
+    if (state.practice && state.phase === "play") state.practicePoints.pop();
   }
 
   if (state.phase === "paused") {

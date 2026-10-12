@@ -1,7 +1,7 @@
 import { drawCube } from "./drawCube";
 import { difficultyLabel, drawFace } from "./faces";
 import { spikeDir, tileAt, type SpikeDir } from "./level";
-import { laserActive, PHYSICS, warningActive } from "./physics";
+import { laserActive, PHYSICS, spawnAt, warningActive } from "./physics";
 import { getTheme, shadeTheme, type Theme } from "./themes";
 import { TILE, type GameState } from "./types";
 
@@ -96,6 +96,11 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
   }
 
   if (theme.fog) drawFog(ctx, state);
+
+  ctx.save();
+  ctx.translate(sx - state.camera.x, sy - state.camera.y);
+  drawPracticeFlags(ctx, state);
+  ctx.restore();
 
   drawHud(ctx, state);
   if (state.phase === "paused" && state.pauseReason === "menu") drawPaused(ctx, state);
@@ -450,15 +455,33 @@ function drawOneWay(ctx: CanvasRenderingContext2D, x: number, y: number, theme: 
   ctx.strokeRect(x + 2, y, TILE - 4, 8);
 }
 
-function drawCheckpoint(ctx: CanvasRenderingContext2D, x: number, y: number, active: boolean): void {
+function drawCheckpoint(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  active: boolean,
+  fill?: string,
+): void {
   ctx.fillStyle = "#eaf6ff";
   ctx.fillRect(x + 10, y + 8, 3, TILE - 12);
-  ctx.fillStyle = active ? "#ff9fbf" : "#6fd6ff";
+  ctx.fillStyle = fill ?? (active ? "#ff9fbf" : "#6fd6ff");
   ctx.beginPath();
   ctx.moveTo(x + 13, y + 8);
   ctx.lineTo(x + 30, y + 15);
   ctx.lineTo(x + 13, y + 22);
   ctx.fill();
+}
+
+/** Green flags for checkpoints the player dropped with Z. The newest one is brighter. */
+function drawPracticeFlags(ctx: CanvasRenderingContext2D, state: GameState): void {
+  if (!state.practice) return;
+  const last = state.practicePoints.length - 1;
+  for (let i = 0; i <= last; i++) {
+    const point = state.practicePoints[i];
+    const x = point.x - (TILE - state.player.w) / 2;
+    const y = point.y - (TILE - state.player.h);
+    drawCheckpoint(ctx, x, y, true, i === last ? "#7dff6a" : "#2f8f4e");
+  }
 }
 
 function drawInfo(ctx: CanvasRenderingContext2D, x: number, y: number, collected: boolean): void {
@@ -649,8 +672,9 @@ function drawParticles(ctx: CanvasRenderingContext2D, state: GameState): void {
 
 function drawAttempt(ctx: CanvasRenderingContext2D, state: GameState): void {
   const label = `Attempt ${state.attempts}`;
-  const x = state.checkpoint.x + state.player.w / 2;
-  const y = state.checkpoint.y - 16;
+  const spawn = spawnAt(state);
+  const x = spawn.x + state.player.w / 2;
+  const y = spawn.y - 16;
   ctx.font = "20px 'Lilita One', system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
@@ -667,7 +691,7 @@ function drawHud(ctx: CanvasRenderingContext2D, state: GameState): void {
   const barY = 14;
   // Leave the top-right clear for the volume slider, Mute, Skip, and Pause.
   // Narrow screens stack them, so they need less horizontal room.
-  const reserve = state.viewW < 900 ? 150 : 410;
+  const reserve = state.viewW < 900 ? 150 : 520;
   const barW = Math.max(48, state.viewW - reserve);
   const progress = (state.player.x + state.player.w / 2) / (state.level.width * TILE);
 
@@ -726,7 +750,8 @@ function outlined(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
 }
 
 function isActiveCheckpoint(state: GameState, c: number, r: number): boolean {
+  const spawn = spawnAt(state);
   const x = c * TILE + (TILE - state.player.w) / 2;
   const y = r * TILE + (TILE - state.player.h);
-  return Math.abs(state.checkpoint.x - x) < 1 && Math.abs(state.checkpoint.y - y) < 1;
+  return Math.abs(spawn.x - x) < 1 && Math.abs(spawn.y - y) < 1;
 }
