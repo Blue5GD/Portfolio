@@ -4,30 +4,33 @@ overview: A dual-mode Astro portfolio for Micah Winesberry (Blue5GD), built in t
 todos:
   - id: setup
     content: In the existing /home/micah/Documents/VScode/Portfolio repo, run npm install, add the two fontsource packages, copy the phone-redacted resume PDF and avatar reference from docs/plan-assets/ into the project, and replace the placeholder index page
-    status: pending
+    status: completed
   - id: content-data
     content: Write src/data/*.ts from the Content section (the fact bank), choosing only the most impactful facts, newest first in every list except Featured
-    status: pending
+    status: completed
   - id: theme-layout
     content: Build BaseLayout, global CSS theme tokens, Nav with Classic/Play mode toggle, and the SVG cube component (all paths use import.meta.env.BASE_URL)
-    status: pending
+    status: completed
   - id: classic-mode
     content: Build classic mode index page with all sections in the defined order
-    status: pending
+    status: completed
   - id: game-engine
     content: "Build the vanilla TS canvas engine: fixed-timestep loop, input, tile-grid AABB collision, cube physics + rotation, spikes, death/respawn, checkpoints, camera"
-    status: pending
+    status: completed
   - id: game-levels
-    content: Author the 6 named ASCII tile levels (First Level, Lost World, Mystic Mountains, Sci-Fi Showdown, Last Hope, The Final Battle) mapped to sections, themed and paced to their songs, with info blocks, end portals, localStorage progress, skip button, and level select with difficulty faces
-    status: pending
+    content: The six courses are in src/game/levels.ts. Widths are 121, 309, 291, 414, 475, and 529 tiles. Exact rows live in that file, not in the old short sketches.
+    status: completed
   - id: game-audio
     content: "Copy and rename the 6 songs from docs/plan-assets/ into public/audio/, then build audio.ts: one looping track per level, keeps playing through deaths, info panels, and the level-clear dialog, pauses on the pause menu, stops on mute or leaving to classic, mute and volume saved in localStorage, game stays silent if a file is missing, Credits panel"
-    status: pending
+    status: completed
   - id: polish-a11y
-    content: Add particles, attempt counter, touch controls, reduced-motion support, mobile default to classic, SEO meta/OG image, favicon
-    status: pending
+    content: Particles, attempt counter, reduced motion, SEO meta, OG image, and favicon are in. The game is keyboard-only. Phones get a notice. On-screen buttons are a future feature, not built.
+    status: completed
+  - id: practice
+    content: Practice mode is a HUD toggle. Z places a checkpoint at the cube. X removes the last one placed.
+    status: completed
   - id: verify
-    content: Run astro check + npm run build, play through every level, check classic mode at 375px/768px/1440px, test under the /Portfolio/ base path with npm run preview, Lighthouse pass
+    content: astro check and npm run build pass, and classic mode was checked at 375, 768, and 1440. A full human playthrough of every level and a Lighthouse score are still open.
     status: pending
 isProject: false
 ---
@@ -91,7 +94,7 @@ GD icon reference: `Portfolio/docs/plan-assets/gd-icon.png` (114x119). This is t
 **Atmosphere:**
 - Diagonal deep-blue-to-violet gradient background, faint large translucent triangles/shards, small floating square particles (CSS animation, disabled when `prefers-reduced-motion`), and a vertical light beam behind the hero (like the avatar).
 - Classic mode borrows Geometry Dash UI language: sections styled as level cards with a progress bar, buttons styled as chunky GD buttons with an outline and a press-down effect.
-- Classic mode text stays formal: no GD terms (difficulty labels or faces, "levels", etc.) in the content. GD styling is visual only (colors, buttons, cube). Difficulty faces appear only in game mode.
+- Classic mode stays formal: no difficulty labels or faces on the cards. The About paragraph is the one place that names Geometry Dash, because that sentence is Micah's own voice. Difficulty faces appear only in game mode.
 
 ## 3. Information architecture and page order
 
@@ -121,9 +124,12 @@ Apply the content restraint rule from section 0. Write in a confident, concise, 
 2. **CourseTable Developer, Y/CS** -- "On the team building Yale's course exploration platform." Links to `https://coursetable.com`.
 3. **National History Day -- Top 20 in the Nation, Individual Website** -- "Out of 500,000+ competitors; 1st at regional and state."
 
-### 4.2 About (placeholder)
+### 4.2 About
 
-Use clearly marked placeholder copy, for example: "Placeholder: I'm Micah, a Yale CS + Math student from Louisiana who likes building practical tools, from embedded Bluetooth apps to probabilistic simulations. [Replace with your own voice.]" Add a `TODO(user)` comment in `src/data/about.ts`.
+Written, in `src/data/about.ts`. Two paragraphs:
+
+1. I'm Micah, a Yale CS + Math student from Louisiana who likes building practical tools. I especially like modeling and simulation, Monte Carlo included.
+2. I'm a Geometry Dash player, which this site makes pretty obvious, and I'm caught up on all 1,200 chapters of One Piece. Did I mention I use Arch?
 
 ### 4.3 Projects (newest first by start date)
 
@@ -209,14 +215,15 @@ Leave out: Tulane Science Olympiad, test scores, class rank, GPA, AP list, schoo
 
 ### 5.1 Concept
 
-This is GD-styled **platformer mode**, not an auto-runner. The player directly controls the cube. Each level is themed after one portfolio section. While the player moves through a level, they touch glowing **info blocks**, which pause the game and open a panel with that section's content. Reaching the **end portal** completes the level and unlocks the next one. Cleared sections can also be read from a "Collected" menu.
+This is GD-styled **platformer mode**, not an auto-runner. The player directly controls the cube. Each level is themed after one portfolio section. While the player moves through a level, they touch glowing **info blocks**, which pause the game and open a panel with that section's content. Reaching the **end portal** completes the level and unlocks the next one. A cleared level card has a Read button that opens that level's panels again. There is no separate Collected menu.
 
 ### 5.2 Controls
 
 - Left/Right arrows (also A/D): move
 - Up arrow (also W/Space): jump
 - Esc/P: pause. R: restart from the last checkpoint. M: mute.
-- Touch devices: on-screen left, right, and jump buttons. On screens under 768px wide or with `pointer: coarse`, show a prompt that recommends Classic mode, but still let the user play.
+- Practice: a Practice button on the HUD. While it is on, Z places a checkpoint at the cube and X removes the last one placed. A death respawns at the newest practice checkpoint. Level checkpoints (`C`) are used when Practice is off, or after every practice checkpoint has been removed.
+- The game is keyboard-only. If the window is under 768px wide, or the primary pointer is coarse (a phone or tablet), Play is not offered. The classic page and the level select both say so, and they say on-screen buttons may be added later. Do not build those buttons unless asked.
 
 ### 5.3 Physics (tune these, but start here)
 
@@ -232,7 +239,7 @@ This is GD-styled **platformer mode**, not an auto-runner. The player directly c
 ### 5.4 Tiles (ASCII level format in `src/game/levels.ts`)
 
 - `.` empty, `#` solid block, `^` spike (floor), `v` spike (ceiling), `<` / `>` spike (wall, pointing left/right), `P` player start, `C` checkpoint flag, `I` info block (opens the panel content linked by index), `O` end portal, `J` jump pad (launch velocity -1250), `=` one-way platform (solid only from above), `~` ice block (solid, low friction: ground friction and acceleration multiplied by 0.15, so the cube slides)
-- Each level is `{ id, title, sectionId, difficulty, song, theme, rows: string[], infoBlocks: ContentRef[] }`. Rows are 12 to 14 tiles tall and about 60 to 160 tiles wide.
+- Each level is a `LevelDef` in `src/game/levels.ts` (`id`, `title`, `theme`, `panels`, `rows`, and an optional `movers` list). The shipped maps are 14 or 16 rows tall. Widths are in section 5.5. The row strings in `levels.ts` are the layout. This file does not duplicate them.
 
 **Spacing (from the physics in section 5.3).** A held jump rises about 3.5 tiles and covers about 5 tiles at full run. A tap-jump stays under 1 tile high, which is how a low ceiling spike works: walking or a tap passes, a full jump hits. A jump pad rises about 7.5 tiles. A pit 6 tiles wide is not jumpable. Standing on a crumble for 0.4s is about 3 tiles of running, so a longer crumble bridge means you cannot stop.
 
@@ -251,42 +258,42 @@ Movers are extra data on the level, not a tile character: `{ kind: "platform" | 
 
 ### 5.5 Levels (6, in difficulty order)
 
-Difficulty climbs steadily. **Each level's layout, pacing, colors, and particle effects must match the vibe of its song.** Calm parts of a song get open, breathable sections. Build-ups get denser obstacles. Drops get the hardest sequences. All six song files are in `docs/plan-assets/` (see section 5.6), so build each level with its song playing and fine-tune the layout to the music's structure and timing. The difficulty face is drawn on the level-select card and in the pause menu. Use original, simple drawings in the style of GD's difficulty faces, not copied assets. Info blocks inside each level follow the newest-first order from section 4.
+Difficulty climbs steadily. **Each level's layout, pacing, colors, and particle effects must match the vibe of its song.** The maps below are what shipped. They are longer than the first sketches. When you change a course, edit `src/game/levels.ts`. This list is a summary, not a second copy of the rows.
 
 1. **"First Level"** -- Normal face -- song: *Race Around the World* by Waterflame -- section: **About + Featured**
    - Vibe: upbeat, bright, friendly. A tutorial.
    - Theme: the default bright blue site palette.
-   - Layout: no new obstacles. About 120 tiles, 2 checkpoints. Flat ground, then floor spike rows of one, two, three, and four, then one jumpable gap (about 3 tiles), then a platform with two tap-jump gates near the end. Each gate is a ceiling spike with a floor spike directly under it: a tap passes, a full jump hits the top spike, and walking hits the bottom one. On-screen hints teach the controls.
+   - Layout (shipped, 121 tiles wide, 14 rows, 2 checkpoints): flat ground, floor spikes in groups of one, two, three, and four, one jumpable gap, then a platform with two tap-jump gates. Hints on the course teach move and jump. No ice, orbs, lasers, or crumbles.
    - Info blocks: About, then the 3 Featured items (Featured order).
 
 2. **"Lost World"** -- Hard face -- song: *Another World* by Razorrekker -- section: **Projects**
    - Vibe: cold, atmospheric, wide open, with a sense of discovery.
    - Theme: **ice world**. Pale cyan/white blocks with a frosty outline, a deep teal-to-navy gradient, slowly falling snow particles, icicle-shaped ceiling spikes.
-   - Layout: about 100 tiles, 2 checkpoints. Ice first with no spikes, then ice into one floor spike (jump early, because the cube slides), then one-way platforms you can fall back through, then one jump pad that lands on normal ground, not ice. Checkpoint. A safe icicle that drops into a pit beside the path, then two real icicles over a sprint of normal ground. Checkpoint. Three crumble tiles over a pit, with no ice on that stretch.
+   - Layout (shipped, 309 tiles wide, 14 rows, 2 checkpoints): ice with floor spikes, one-way platforms, jump pads, falling icicles (one drops into a hole, later ones hang over the path), then crumble islands. More ice and a pad near the portal. Column notes are in `levels.ts`.
    - Info blocks: the 3 projects (Scheduler, Flipper, FSRS).
 
 3. **"Mystic Mountains"** -- Harder face -- song: *The Falling Mysts* by Dimrain47 -- section: **Experience, High School**
    - Vibe: misty, emotional, flowing, and descending.
    - Theme: soft violet/grey mist. A semi-transparent fog layer drifts across the screen, and light motes drift downward.
-   - Layout: about 110 tiles, 2 checkpoints, each on a ledge after a drop. No ice, orbs, or lasers. First shaft is 3 tiles wide with spikes on one wall. Then a flat run under ceiling spikes. Later shaft is 2 tiles wide with spikes on both walls. One moving platform: the slow 4-tile shuttle over a pit wider than a jump, under a ceiling so the pit cannot be jumped.
+   - Layout (shipped, 291 tiles wide, 16 rows, 2 checkpoints, each on a ledge after a drop): no ice, orbs, or lasers. Drop shafts with wall spikes, a low ceiling, short-hop spike corridors, and one moving platform. That platform is the slow 4-tile shuttle over a pit wider than a jump, under a ceiling so the pit cannot be jumped.
    - Info blocks: Science Olympiad, Mu Alpha Theta, Chess, Service.
 
 4. **"Sci-Fi Showdown"** -- Insane face -- song: *At the Speed of Light* by Dimrain47 -- section: **Experience, At Yale**
    - Vibe: fast, intense, relentless energy.
    - Theme: neon. Electric cyan and magenta, with motion-streak particles behind the cube while it's moving fast.
-   - Layout: about 140 tiles, 3 checkpoints. One vertical laser you can wait out, then three jump pads about 6 tiles apart. Checkpoint. One orb over a safe floor, then an orb over a pit, then two orbs in a row. Checkpoint. Three vertical lasers with a floor gap between them and a low ceiling so you cannot jump over the beams. Then a short-hop spike corridor, then a pad into an orb into one laser.
+   - Layout (shipped, 414 tiles wide, 14 rows, 5 checkpoints): a vertical laser you can wait out, jump pads, orbs over safe floor and over pits, a laser tunnel under a low ceiling, a short-hop corridor, and two moving platforms (one sideways, one vertical).
    - Info blocks: CourseTable, Catalyst.
 
 5. **"Last Hope"** -- Hard Demon face -- song: *Figures* by ~NK~ -- section: **Awards**
    - Vibe: unsettling, and it gets heavier as it goes.
    - Theme: starts in dusky purple and gets **progressively darker** with progress. The background and block brightness fade toward near-black as the player moves right (darkness goes from 0 to 0.75), with deep red accents in the final third.
-   - Layout: about 140 tiles, 3 checkpoints, while the screen darkens. One visible crumble tile, then one laser, then a laser over a crumble so standing still drops you. Checkpoint near 30% progress. Ice into a pad that lands on normal ground, then ice with floor spikes. A descending crumble staircase. Checkpoint near 60%, where the red accents start. Final third: a pad chain whose landings crumble, ending in a laser.
+   - Layout (shipped, 475 tiles wide, 14 rows, 3 checkpoints): almost every solid tile is a crumble, including walls, so standing still drops the floor. Ice, lasers, falling spikes, orbs, pads, and one moving platform, while the screen darkens. Red accents start near 60% progress.
    - Info blocks: the awards, split into 3 panels, newest first.
 
 6. **"The Final Battle"** -- Extreme Demon face -- song: *Battle Against a True Hero* (Undyne the Undying theme, Undertale) by Toby Fox -- section: **Skills, Education, Contact**
    - Vibe: a climactic final boss fight. Heroic, intense, no mercy.
    - Theme: **explicitly dark the entire time.** A near-black background, with the visible area limited to a radial light around the cube (radius about 5 tiles; everything outside fades to black). Spikes are glowing cyan-blue spear shapes, so they're visible inside the dark. Occasional green flashes act as warnings.
-   - Layout: **the hardest level on the site.** About 160 tiles, 4 checkpoints, inside the 5-tile light, including blind-ish sections where only the cube's light shows the path. A green flash of about a quarter second plays just before a saw reaches the cube or a laser turns on. Order: spikes in the dark, then one slow saw over a platform you can wait on, then falling spikes and a crumble bridge, then lasers and orbs, then one last corridor that uses the saw, a laser, a crumble, and an orb together. The fourth checkpoint sits at the start of that last corridor.
+   - Layout (shipped, 529 tiles wide, 16 rows, 4 checkpoints): the hardest course. Spikes, many saws, falling spikes, crumble bridges, lasers, orbs, and pads, inside the 5-tile light (200px). A green flash of about a quarter second plays just before a nearby laser turns on or a saw reaches the cube. The fourth checkpoint is before the last stretch. Column notes are in `levels.ts`.
    - Ending: the end portal opens the Contact panel with a "Level Complete!" burst of square particles, plus total attempts and links.
    - Info blocks: Skills, Education, Contact.
 
@@ -315,12 +322,12 @@ Because levels 4 to 6 are hard, the "Skip level" button (section 5.7) is require
 - Mute toggle: a speaker button in the HUD and level select, plus the `M` key. Save the choice in `localStorage` key `b5gd:muted`.
 - Volume slider: in the HUD and on the level select. Default 0.6. Save the choice in `localStorage` key `b5gd:volume` as a number from 0 to 1.
 - **If a file is missing or fails to load, the game runs silently.** Catch the error and show no error to the player, so a bad network or a removed track never breaks the game.
-- **Credits:** add a "Music Credits" panel (linked from level select and the `/play` footer) that lists each song, its artist, and a link to its source. Add a matching "Music" section to `README.md` that says the user is responsible for getting permission or confirming each artist's usage terms before deploying publicly.
+- **Credits:** a "Music credits" button on the level select lists each song, its artist, and a link to its source. There is no separate footer link on `/play`. `README.md` has a Music section that says Micah is responsible for permission or each artist's usage terms before the songs are public.
 
 ### 5.7 Game feel and UI
 
 - Death: the cube shatters into square particles, a short screen shake (skipped under reduced motion), then respawn at the last checkpoint after 400 ms. Music keeps playing. A GD-style "Attempt N" label is drawn in the world near the spawn point.
-- HUD: a level progress bar at the top (percent of level width), a pause button, a mute button, and a "Skip level" button. Skipping unlocks the level and opens all its panels in sequence, so nobody gets stuck.
+- HUD: a level progress bar at the top (percent of level width), a Practice button, a pause button, a mute button, a volume slider, and a "Skip level" button. Skipping unlocks the level and opens all its panels in sequence, so nobody gets stuck. Practice checkpoints are green flags. The newest one is where you respawn.
 - Level select screen: GD-style cards with the level name, difficulty face, difficulty label (Normal, Hard, Harder, Insane, Hard Demon, Extreme Demon), song and artist, section, and "Cleared" state.
 - Content panels are HTML `<dialog>` elements over the canvas (accessible, selectable text). The game pauses while a panel is open. The music keeps playing. Close with Esc, Enter, or a button.
 - Background: parallax layers styled by each level's `theme` (gradient, translucent triangles, theme particles). Default block tiles: dark navy with a cyan glowing outline, like a GD block.
@@ -390,7 +397,8 @@ Portfolio/
     game/
       main.ts  loop.ts  input.ts  physics.ts  level.ts  levels.ts
       render.ts  drawCube.ts  particles.ts  panels.ts  storage.ts  types.ts
-      audio.ts  themes.ts  faces.ts   (difficulty face drawings)
+      audio.ts  themes.ts  faces.ts  device.ts
+      (faces.ts draws the difficulty faces. device.ts decides if the keyboard game is available.)
 ```
 
 ## 7. Build steps
@@ -402,15 +410,12 @@ Portfolio/
 5. Build classic mode in the section order.
 6. Build the game engine, then level 1 alone. Tune the physics until it feels good, then author levels 2 to 6 with their themes, getting harder in order.
 7. Copy and rename the songs into `public/audio/` (section 5.6), then build the audio system and the Music Credits panel. Also test with one file temporarily renamed (the game must stay silent with no errors).
-8. Polish: particles, attempt counter, touch controls, reduced motion, SEO/OG meta, favicon.
+8. Polish: particles, attempt counter, reduced motion, SEO/OG meta, favicon. The game stays keyboard-only. A notice on the classic page and on `/play` tells phone users to read Classic mode, and says on-screen buttons may come later.
 9. Verify:
-   - `npx astro check` and `npm run build` pass with no errors.
-   - `npm run preview` works under `/Portfolio/`, with no broken links or assets.
-   - Every level is beatable, and the skip button works.
-   - Audio: keeps playing through death, info panels, and the level-clear dialog, pauses on the pause menu, stops on mute or when leaving the level, and the mute and volume settings persist.
-   - Classic mode works at 375px, 768px, and 1440px.
-   - Keyboard navigation works and dialogs are accessible.
-   - Lighthouse scores 90+ for performance and accessibility on the classic page.
+   - `npx astro check` and `npm run build` pass with no errors. This has been run.
+   - Classic mode holds at 375px, 768px, and 1440px. This has been checked.
+   - Still open for a person at the keyboard: play every level to the portal, and run Lighthouse (target 90+ for performance and accessibility on the classic page).
+   - Audio rules: the song keeps playing through death, info panels, and the level-clear dialog, pauses on the pause menu, and stops on mute or when leaving the level. Mute and volume persist.
 
 ## 8. Decisions already made (do not re-ask)
 
@@ -422,9 +427,10 @@ Portfolio/
 - Platformer mode with manual control. Only the cube gamemode. The avatar's ship and background are not playable.
 - The player cube is recreated from `docs/plan-assets/gd-icon.png` (the user's real GD icon), not from the avatar.
 - The resume in the repo is the phone-redacted version. The six songs are provided in `docs/plan-assets/`.
-- Classic is the default route. The game is opt-in at `/play` and always skippable.
-- About uses placeholder copy until the user writes it.
-- Classic mode is somewhat formal: no GD references in its text, and no difficulty badges on project cards.
+- Classic is the default route. The game is opt-in at `/play`, keyboard-only, and always skippable. On a phone or a window under 768px, the game does not start. On-screen controls are a future feature.
+- About is written. It mentions Geometry Dash, One Piece, and Arch. That is the one GD mention in classic text.
+- Classic mode is somewhat formal: no difficulty badges on project cards.
+- Practice mode is a HUD toggle. Z places a checkpoint. X removes the last one placed.
 - Level names, difficulty faces, songs, and sections are fixed as listed in section 5.5. Levels must match their song's vibe. Level 6 is dark and the hardest.
 - Tulane Science Olympiad is not in Awards. It's mentioned only under Science Olympiad experience.
 - Science fair mapping (confirmed by the user): Scheduler = Louisiana State 1st (Math) + GNOSEF 3rd/ONR award (2026). FSRS = GNOSEF 1st (Math and Systems Software) + Louisiana State 4th Systems Software (2025).
