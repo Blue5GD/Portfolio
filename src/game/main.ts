@@ -231,6 +231,10 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     syncVolume(input);
   }
 
+  // A joke on The Final Battle card, and again when that course is cleared for real.
+  const finalBattleJoke =
+    "If you clear The Final Battle in normal mode and send me a video of yourself completing it, I will give you $50.";
+
   /** Clear beats practice, and practice beats skip. Null means not finished yet. */
   function levelMark(index: number): "cleared" | "practice" | "skipped" | null {
     if (progress.cleared.includes(index)) return "cleared";
@@ -275,6 +279,12 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
       badge.textContent = locked ? "Locked" : markLabel ? markLabel : playable ? readyLabel : "Unlocked";
 
       card.append(face, title, diff, song, section, badge);
+      if (course.level?.finale) {
+        const joke = document.createElement("p");
+        joke.className = "tidbit";
+        joke.textContent = finalBattleJoke;
+        card.append(joke);
+      }
 
       if (!locked) {
         const actions = document.createElement("div");
@@ -391,6 +401,12 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
         }
         dialogBody.prepend(runNote, totalNote);
         if (practicing) dialogBody.prepend(modeNote);
+        else {
+          const joke = document.createElement("p");
+          joke.className = "tidbit";
+          joke.textContent = finalBattleJoke;
+          dialogBody.prepend(joke);
+        }
         openDialog("Level select", () => showSelect());
         return;
       }
