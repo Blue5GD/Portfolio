@@ -1,4 +1,5 @@
 import { createMusic } from "./audio";
+import { keyboardGameAvailable, watchKeyboardGame } from "./device";
 import { difficultyLabel, faceUrl } from "./faces";
 import { attachInput } from "./input";
 import { parseLevel } from "./level";
@@ -250,28 +251,26 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
       section.textContent = course.section;
       const badge = document.createElement("p");
       badge.className = "badge";
-      badge.textContent = locked ? "Locked" : cleared ? "Cleared" : playable ? "Ready" : "Unlocked";
+      const readyLabel = keyboardGameAvailable() ? "Ready" : "Keyboard only";
+      badge.textContent = locked ? "Locked" : cleared ? "Cleared" : playable ? readyLabel : "Unlocked";
 
       card.append(face, title, diff, song, section, badge);
 
       if (!locked) {
         const actions = document.createElement("div");
         actions.className = "card-actions";
-        if (playable) {
+        if (playable && !keyboardGameAvailable()) {
+          const needsKeys = document.createElement("p");
+          needsKeys.className = "section";
+          needsKeys.textContent = "Needs a keyboard";
+          actions.append(needsKeys);
+        } else if (playable) {
           const play = document.createElement("button");
           play.type = "button";
           play.className = "gd-btn";
           play.textContent = "Play";
           play.addEventListener("click", () => startLevel(index));
           actions.append(play);
-          if (cleared && course.level) {
-            const read = document.createElement("button");
-            read.type = "button";
-            read.className = "gd-btn gd-btn--alt";
-            read.textContent = "Read";
-            read.addEventListener("click", () => openRefs(course.level?.panels ?? [], () => {}, "Done"));
-            actions.append(read);
-          }
         } else {
           const soon = document.createElement("button");
           soon.type = "button";
@@ -286,6 +285,14 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
             openDialog("Back", () => {});
           });
           actions.append(soon);
+        }
+        if (playable && cleared && course.level) {
+          const read = document.createElement("button");
+          read.type = "button";
+          read.className = "gd-btn gd-btn--alt";
+          read.textContent = "Read";
+          read.addEventListener("click", () => openRefs(course.level?.panels ?? [], () => {}, "Done"));
+          actions.append(read);
         }
         card.append(actions);
       }
@@ -304,7 +311,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   function startLevel(index: number) {
     const course = courses[index];
     if (!course || index >= progress.unlocked || dialog.open) return;
-    if (!course.level) return;
+    if (!course.level || !keyboardGameAvailable()) return;
 
     if (stopLoop) {
       stopLoop();
@@ -468,6 +475,13 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   };
   motion.addEventListener("change", onMotion);
 
+  // Leaving a keyboard layout (a phone rotation, or a window dragged narrow)
+  // drops back to the level select. The note there explains why Play is gone.
+  const stopKeyboardWatch = watchKeyboardGame(() => {
+    if (!keyboardGameAvailable() && playing) showSelect();
+    renderCards();
+  });
+
   function fit() {
     if (!state) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -514,6 +528,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     detach();
     observer.disconnect();
     motion.removeEventListener("change", onMotion);
+    stopKeyboardWatch();
     dialog.removeEventListener("keydown", onDialogKey);
   }
 

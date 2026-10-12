@@ -53,6 +53,13 @@ const gameContent = {
         <p class="intro">
           Clear a level to unlock the next one. Skip reads every panel in the level if you want the writing without the jumps.
         </p>
+        <aside class="keyboard-note">
+          <p>
+            The platformer needs a keyboard, so it is not available on a phone or a narrow window.
+            The same writing is on the Classic page. On-screen buttons are a possible addition later, not part of the site today.
+          </p>
+          <a class="gd-btn" href={base}>Back to Classic</a>
+        </aside>
         <div id="level-cards" class="cards"></div>
         <p id="attempt-total" class="attempts" aria-live="polite"></p>
         <div class="select-actions">
@@ -153,6 +160,29 @@ const gameContent = {
   .intro {
     max-width: 40rem;
     color: var(--text-muted);
+  }
+
+  /* Visible unless the window is wide and the primary pointer is a mouse or trackpad. */
+  .keyboard-note {
+    display: block;
+    max-width: 40rem;
+    margin: 0 0 1.25rem;
+    padding: 0.9rem 1rem;
+    color: var(--text);
+    background: rgba(7, 10, 43, 0.55);
+    border: 3px solid #000;
+    border-radius: 12px;
+    box-shadow: 0 4px 0 #000;
+  }
+
+  .keyboard-note p {
+    margin: 0 0 0.85rem;
+  }
+
+  @media (min-width: 768px) and (pointer: fine) {
+    .keyboard-note {
+      display: none;
+    }
   }
 
   .cards {
