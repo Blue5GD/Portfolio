@@ -23,7 +23,7 @@ All of the text lives in `src/data/`. Classic mode and the game both read those 
 
 `/play` opens a level select. Clearing or skipping a level unlocks the next one. That progress is saved in the browser under the key `b5gd:progress`. The mute button is saved under `b5gd:muted`. The volume slider is saved under `b5gd:volume`.
 
-First Level, Lost World, Mystic Mountains, and Sci-Fi Showdown, in `src/game/levels.ts`, are the courses you can play. Last Hope and The Final Battle are listed there too, without maps yet. Each string in `rows` is one row of the map. Row 0 is the top. Every row in a level must be the same length.
+First Level, Lost World, Mystic Mountains, Sci-Fi Showdown, and Last Hope, in `src/game/levels.ts`, are the courses you can play. The Final Battle card is listed there too, without a map yet. Each string in `rows` is one row of the map. Row 0 is the top. Every row in a level must be the same length.
 
 ```text
 . empty     # block      ~ ice        = one-way platform
@@ -41,7 +41,9 @@ An `o` is a ring. Touching it does nothing. Press jump while the cube overlaps i
 
 A moving platform is not a letter in the map. It is listed under `movers`. It is a single solid tile that goes out and comes back. Standing on it carries the cube. When the cube respawns, the platform snaps back to where it started. Mystic Mountains has one. Sci-Fi Showdown has two: one that slides sideways, and one that moves up and down.
 
-An `I` tile opens a panel. On First Level those panels are About, then the three Featured items, in that order. On Lost World they are the three projects, newest first. On Mystic Mountains they are Science Olympiad, Mu Alpha Theta, Chess, and then Service. On Sci-Fi Showdown they are CourseTable, then Catalyst. The words come from `src/data`. The game does not keep a second copy.
+An `I` tile opens a panel. On First Level those panels are About, then the three Featured items, in that order. On Lost World they are the three projects, newest first. On Mystic Mountains they are Science Olympiad, Mu Alpha Theta, Chess, and then Service. On Sci-Fi Showdown they are CourseTable, then Catalyst. On Last Hope they are the awards, newest first, split into three panels. The words come from `src/data`. The game does not keep a second copy.
+
+Last Hope gets darker as you move right. The last part of that course turns the floor edge and the spikes red so you can still read them.
 
 Warmup is still in `src/game/levels.ts`, but it is not on the level select. It is the old practice map (ice, jump pads, one-way platforms, wall spikes). Falling spikes and crumble blocks are used in Lost World.
 
