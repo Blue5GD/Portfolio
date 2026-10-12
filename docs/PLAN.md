@@ -32,6 +32,9 @@ todos:
   - id: verify
     content: astro check and npm run build pass, and classic mode was checked at 375, 768, and 1440. A full human playthrough of every level and a Lighthouse score are still open.
     status: pending
+  - id: all-normal-clears
+    content: "Future, not built: when all six levels are cleared in normal mode (Practice off, and not merely skipped or practice completed), do something special. The reward is not designed yet. Do not build it until asked. Practice completions and skips do not count."
+    status: pending
 isProject: false
 ---
 
@@ -215,7 +218,7 @@ Leave out: Tulane Science Olympiad, test scores, class rank, GPA, AP list, schoo
 
 ### 5.1 Concept
 
-This is GD-styled **platformer mode**, not an auto-runner. The player directly controls the cube. Each level is themed after one portfolio section. While the player moves through a level, they touch glowing **info blocks**, which pause the game and open a panel with that section's content. Reaching the **end portal** completes the level and unlocks the next one. A cleared level card has a Read button that opens that level's panels again. There is no separate Collected menu.
+This is GD-styled **platformer mode**, not an auto-runner. The player directly controls the cube. Each level is themed after one portfolio section. While the player moves through a level, they touch glowing **info blocks**, which pause the game and open a panel with that section's content. Reaching the **end portal** with Practice off clears the level and unlocks the next one. Reaching it with Practice on marks the level practice completed and unlocks the next one, but it is not a clear. Skip marks the level skipped, unlocks the next one, and is not a clear. A later normal clear replaces a practice or skip mark. A cleared, practice-completed, or skipped card has a Read button that opens that level's panels again. There is no separate Collected menu. A reward for clearing every level in normal mode is a future idea and is not built. Practice completions and skips do not count toward it.
 
 ### 5.2 Controls
 
@@ -293,7 +296,7 @@ Difficulty climbs steadily. **Each level's layout, pacing, colors, and particle 
 6. **"The Final Battle"** -- Extreme Demon face -- song: *Battle Against a True Hero* (Undyne the Undying theme, Undertale) by Toby Fox -- section: **Skills, Education, Contact**
    - Vibe: a climactic final boss fight. Heroic, intense, no mercy.
    - Theme: **explicitly dark the entire time.** A near-black background, with the visible area limited to a radial light around the cube (radius about 5 tiles; everything outside fades to black). Spikes are glowing cyan-blue spear shapes, so they're visible inside the dark. Occasional green flashes act as warnings.
-   - Layout (shipped, 529 tiles wide, 16 rows, 4 checkpoints): the hardest course. Spikes, many saws, falling spikes, crumble bridges, lasers, orbs, and pads, inside the 5-tile light (200px). A green flash of about a quarter second plays just before a nearby laser turns on or a saw reaches the cube. The fourth checkpoint is before the last stretch. Column notes are in `levels.ts`.
+   - Layout (shipped, 529 tiles wide, 16 rows, 4 checkpoints): the hardest course. Spikes, many saws, falling spikes, crumble bridges, lasers, orbs, and pads, inside the 5-tile light (200px). Orb sections have no floor under the orbs, so the cube has to keep catching orbs to stay in the air. Lasers under those arcs sit below a successful chain. A green flash of about a quarter second plays just before a nearby laser turns on or a saw reaches the cube. The fourth checkpoint is before the last stretch. Column notes are in `levels.ts`.
    - Ending: the end portal opens the Contact panel with a "Level Complete!" burst of square particles, plus total attempts and links.
    - Info blocks: Skills, Education, Contact.
 
@@ -327,12 +330,12 @@ Because levels 4 to 6 are hard, the "Skip level" button (section 5.7) is require
 ### 5.7 Game feel and UI
 
 - Death: the cube shatters into square particles, a short screen shake (skipped under reduced motion), then respawn at the last checkpoint after 400 ms. Music keeps playing. A GD-style "Attempt N" label is drawn in the world near the spawn point.
-- HUD: a level progress bar at the top (percent of level width), a Practice button, a pause button, a mute button, a volume slider, and a "Skip level" button. Skipping unlocks the level and opens all its panels in sequence, so nobody gets stuck. Practice checkpoints are green flags. The newest one is where you respawn.
-- Level select screen: GD-style cards with the level name, difficulty face, difficulty label (Normal, Hard, Harder, Insane, Hard Demon, Extreme Demon), song and artist, section, and "Cleared" state.
+- HUD: a level progress bar at the top (percent of level width), a Practice button, a pause button, a mute button, a volume slider, and a "Skip level" button. Skipping marks the level skipped, unlocks the next one, and opens all its panels in sequence, so nobody gets stuck. It does not clear the level. Practice checkpoints are green flags. The newest one is where you respawn. Finishing with Practice on marks the level practice completed and unlocks the next one. That is not a clear.
+- Level select screen: GD-style cards with the level name, difficulty face, difficulty label (Normal, Hard, Harder, Insane, Hard Demon, Extreme Demon), song and artist, section, and a state of Locked, Ready, Skipped, Practice completed, or Cleared.
 - Content panels are HTML `<dialog>` elements over the canvas (accessible, selectable text). The game pauses while a panel is open. The music keeps playing. Close with Esc, Enter, or a button.
 - Background: parallax layers styled by each level's `theme` (gradient, translucent triangles, theme particles). Default block tiles: dark navy with a cyan glowing outline, like a GD block.
 - Darkness: levels 5 and 6 draw a full-screen dark overlay. Level 5's overlay gets stronger with progress. Level 6 cuts a radial light hole around the cube (using `globalCompositeOperation` or a radial gradient).
-- Progress is stored in `localStorage` key `b5gd:progress` = `{ unlocked: number, cleared: number[], attempts: number }`. Level select has a "Reset progress" button.
+- Progress is stored in `localStorage` key `b5gd:progress` = `{ unlocked: number, cleared: number[], practice: number[], skipped: number[], attempts: number }`. `cleared` is only normal-mode wins. `practice` is portal finishes with Practice on. `skipped` is Skip. Any of the three unlocks the next level. Level select has a "Reset progress" button. Older saves that only have `cleared` keep those indexes as clears. A reward for having every level in `cleared` is a future idea and is not built.
 
 ### 5.8 Engine architecture (vanilla TS, `src/game/`)
 

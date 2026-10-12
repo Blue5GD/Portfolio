@@ -21,7 +21,7 @@ All of the text lives in `src/data/`. Classic mode and the game both read those 
 
 ## Edit the levels
 
-`/play` opens a level select. Clearing or skipping a level unlocks the next one. That progress is saved in the browser under the key `b5gd:progress`. The mute button is saved under `b5gd:muted`. The volume slider is saved under `b5gd:volume`.
+`/play` opens a level select. Beating a level with Practice off marks it cleared. Finishing with Practice on marks it practice completed. Skip marks it skipped. Any of those three unlocks the next level. Only a normal clear counts as cleared. That progress is saved in the browser under the key `b5gd:progress`. The mute button is saved under `b5gd:muted`. The volume slider is saved under `b5gd:volume`.
 
 The game needs a keyboard. On a phone, or in a window narrower than 768px, Play is hidden and a note points back to the classic page. On-screen buttons are a possible later feature. They are not built.
 

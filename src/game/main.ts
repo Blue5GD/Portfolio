@@ -10,10 +10,13 @@ import { createGame, step } from "./physics";
 import { render } from "./render";
 import { getTheme } from "./themes";
 import {
+  emptyProgress,
   loadMuted,
   loadProgress,
   loadVolume,
   markCleared,
+  markPractice,
+  markSkipped,
   saveMuted,
   saveProgress,
   saveVolume,
@@ -24,7 +27,8 @@ import type { ContentRef, GameState } from "./types";
 // Front door for /play.
 //
 // The page opens on a level select. Picking a course builds a GameState and
-// starts the loop. Beating or skipping a course writes `b5gd:progress`.
+// starts the loop. A normal clear, a practice finish, or a skip writes
+// `b5gd:progress`. Only a normal clear marks the level cleared.
 //
 //   input.ts      which keys are held, plus the M key
 //   loop.ts       steady 1/120s physics steps, drawn every frame
@@ -33,7 +37,7 @@ import type { ContentRef, GameState } from "./types";
 //   levels.ts     the six courses; First Level through Last Hope have maps
 //   panels.ts     turns an info block into the dialog, using src/data
 //   audio.ts      one looping song per level
-//   storage.ts    saved unlocks, clears, attempts, mute, and volume
+//   storage.ts    saved unlocks, clears, practice, skips, attempts, mute, and volume
 //   faces.ts      difficulty faces on the cards and the pause screen
 //   render.ts     draws the map, the cube, and the progress bar
 
@@ -227,15 +231,23 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     syncVolume(input);
   }
 
+  /** Clear beats practice, and practice beats skip. Null means not finished yet. */
+  function levelMark(index: number): "cleared" | "practice" | "skipped" | null {
+    if (progress.cleared.includes(index)) return "cleared";
+    if (progress.practice.includes(index)) return "practice";
+    if (progress.skipped.includes(index)) return "skipped";
+    return null;
+  }
+
   function renderCards() {
     cardList.replaceChildren();
     courses.forEach((course, index) => {
       const locked = index >= progress.unlocked;
-      const cleared = progress.cleared.includes(index);
+      const mark = levelMark(index);
       const playable = Boolean(course.level);
       const card = document.createElement("article");
       card.className = "card";
-      card.dataset.state = locked ? "locked" : cleared ? "cleared" : "open";
+      card.dataset.state = locked ? "locked" : mark ?? "open";
       if (locked) card.setAttribute("aria-disabled", "true");
 
       const face = document.createElement("img");
@@ -258,7 +270,9 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
       const badge = document.createElement("p");
       badge.className = "badge";
       const readyLabel = keyboardGameAvailable() ? "Ready" : "Keyboard only";
-      badge.textContent = locked ? "Locked" : cleared ? "Cleared" : playable ? readyLabel : "Unlocked";
+      const markLabel =
+        mark === "cleared" ? "Cleared" : mark === "practice" ? "Practice completed" : mark === "skipped" ? "Skipped" : null;
+      badge.textContent = locked ? "Locked" : markLabel ? markLabel : playable ? readyLabel : "Unlocked";
 
       card.append(face, title, diff, song, section, badge);
 
@@ -292,7 +306,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
           });
           actions.append(soon);
         }
-        if (playable && cleared && course.level) {
+        if (playable && mark && course.level) {
           const read = document.createElement("button");
           read.type = "button";
           read.className = "gd-btn gd-btn--alt";
@@ -355,25 +369,43 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     };
     next.onWin = () => {
       // The clear panel stays on this song. showSelect() stops it when they leave.
-      markCleared(progress, index, courses.length);
+      // Practice is checked at the portal. Turning it off before the end is a normal clear.
+      const practicing = next.practice;
+      const alreadyCleared = progress.cleared.includes(index);
+      if (practicing) markPractice(progress, index, courses.length);
+      else markCleared(progress, index, courses.length);
       saveProgress(progress);
       const following = courses[index + 1];
       if (next.level.finale) {
         fillPanel(dialogTitle, dialogBody, content, { kind: "contact" });
-        dialogTitle.textContent = "Level Complete!";
+        dialogTitle.textContent = practicing ? "Practice completed" : "Level Complete!";
         const runNote = document.createElement("p");
         runNote.textContent = `${course.title} took ${next.attempts} attempts this run.`;
         const totalNote = document.createElement("p");
         totalNote.textContent = `Total attempts across every level: ${progress.attempts}.`;
+        const modeNote = document.createElement("p");
+        if (practicing && alreadyCleared) {
+          modeNote.textContent = "Practice mode is on. The clear on this level stays.";
+        } else if (practicing) {
+          modeNote.textContent = "Practice mode does not clear the level. Beat it with Practice off to clear it.";
+        }
         dialogBody.prepend(runNote, totalNote);
+        if (practicing) dialogBody.prepend(modeNote);
         openDialog("Level select", () => showSelect());
         return;
       }
-      dialogTitle.textContent = `${course.title} clear`;
+      dialogTitle.textContent = practicing ? "Practice completed" : `${course.title} clear`;
       dialogBody.replaceChildren();
       const note = document.createElement("p");
       note.textContent = `Attempts this run: ${next.attempts}.`;
       dialogBody.append(note);
+      if (practicing) {
+        const modeNote = document.createElement("p");
+        modeNote.textContent = alreadyCleared
+          ? "Practice mode is on. The clear on this level stays."
+          : "Practice mode does not clear the level. Beat it with Practice off to clear it.";
+        dialogBody.append(modeNote);
+      }
       if (following) {
         const unlocked = document.createElement("p");
         unlocked.textContent = `${following.title} is unlocked.`;
@@ -440,9 +472,24 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     if (!course?.level) return;
     state.phase = "paused";
     state.pauseReason = "dialog";
-    markCleared(progress, currentIndex, courses.length);
+    markSkipped(progress, currentIndex, courses.length);
     saveProgress(progress);
-    openRefs(course.level.panels, () => showSelect(), "Level select");
+    const mark = levelMark(currentIndex);
+    const following = courses[currentIndex + 1];
+    dialogTitle.textContent = "Skipped";
+    dialogBody.replaceChildren();
+    const note = document.createElement("p");
+    if (mark === "cleared") {
+      note.textContent = "This level stays cleared. The panels are next.";
+    } else if (mark === "practice") {
+      note.textContent = "This level stays practice completed. Skipping does not clear it. The panels are next.";
+    } else if (following) {
+      note.textContent = `Marked skipped. ${following.title} is unlocked. Skipping does not clear the level. The panels are next.`;
+    } else {
+      note.textContent = "Marked skipped. Skipping does not clear the level. The panels are next.";
+    }
+    dialogBody.append(note);
+    openDialog("Continue", () => openRefs(course.level?.panels ?? [], () => showSelect(), "Level select"));
   }
 
   pause.addEventListener("click", () => {
@@ -474,7 +521,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     openDialog(
       "Reset",
       () => {
-        progress = { unlocked: 1, cleared: [], attempts: 0 };
+        progress = emptyProgress();
         saveProgress(progress);
         renderCards();
       },

@@ -43,7 +43,7 @@ const gameContent = {
 
 <BaseLayout
   title="Play | Blue5GD"
-  description="A platformer through Micah Winesberry's portfolio. Clear a level to unlock the next."
+  description="A platformer through Micah Winesberry's portfolio. Clear a level in normal mode. Practice and skip unlock the next level without clearing it."
   mode="play"
 >
   <main class="shell">
@@ -51,7 +51,7 @@ const gameContent = {
       <div class="select-inner">
         <h1 id="select-title">Level select</h1>
         <p class="intro">
-          Clear a level to unlock the next one. Skip reads every panel in the level if you want the writing without the jumps.
+          Clear a level with Practice off to mark it cleared. Finishing in Practice, or skipping, unlocks the next level but does not clear it. Skip also reads every panel if you want the writing without the jumps.
         </p>
         <aside class="keyboard-note">
           <p>
@@ -411,6 +411,26 @@ const gameContent = {
 
   #level-cards .card[data-state="cleared"] .badge {
     color: var(--accent-pink);
+  }
+
+  #level-cards .card[data-state="practice"] {
+    box-shadow:
+      0 0 0 2px rgba(143, 107, 255, 0.55),
+      0 6px 0 #000;
+  }
+
+  #level-cards .card[data-state="practice"] .badge {
+    color: var(--glow-violet);
+  }
+
+  #level-cards .card[data-state="skipped"] {
+    box-shadow:
+      0 0 0 2px rgba(159, 179, 217, 0.5),
+      0 6px 0 #000;
+  }
+
+  #level-cards .card[data-state="skipped"] .badge {
+    color: var(--text-muted);
   }
 
   #level-cards .card-actions {
