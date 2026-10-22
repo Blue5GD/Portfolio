@@ -26,18 +26,46 @@ const sections = [
 <header class="nav">
   <nav class="bar" aria-label="Main">
     <a class="logo wordmark" href={base}>{identity.brand}</a>
-    <ModeToggle current={mode} />
+    <div class="bar-end">
+      {
+        mode === "classic" && (
+          <details class="section-menu">
+            <summary>Contents</summary>
+            <nav aria-label="On this page">
+              {sections.map((section) => (
+                <a href={section.href}>{section.label}</a>
+              ))}
+            </nav>
+          </details>
+        )
+      }
+      <ModeToggle current={mode} />
+    </div>
   </nav>
-  {
-    mode === "classic" && (
-      <nav class="outline" aria-label="On this page">
-        {sections.map((section) => (
-          <a href={section.href}>{section.label}</a>
-        ))}
-      </nav>
-    )
-  }
 </header>
+
+<script>
+  // The menu is a <details> element, so it opens and closes without extra code.
+  // This only tidies it up: click outside, press Escape, or pick a section, and it shuts.
+  const menu = document.querySelector<HTMLDetailsElement>(".section-menu");
+  if (menu) {
+    document.addEventListener("click", (event) => {
+      if (!menu.open) return;
+      if (event.target instanceof Node && menu.contains(event.target)) return;
+      menu.open = false;
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") menu.open = false;
+    });
+
+    for (const link of menu.querySelectorAll("a")) {
+      link.addEventListener("click", () => {
+        menu.open = false;
+      });
+    }
+  }
+</script>
 
 <style>
   .nav {
@@ -49,6 +77,7 @@ const sections = [
     border-bottom: 1px solid rgba(111, 214, 255, 0.15);
   }
 
+  /* Same single row as before the section links existed. The menu hangs over the page, so it does not stretch this bar. */
   .bar {
     max-width: var(--content-width);
     margin: 0 auto;
@@ -59,40 +88,104 @@ const sections = [
     gap: 1rem;
   }
 
+  .bar-end {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
   .logo {
     font-size: 1.6rem;
     text-decoration: none;
   }
 
-  /* Text links, not chunky buttons: nine buttons would make this sticky bar too tall.
-     min-width: 0 lets a narrow window scroll the row instead of widening the page. */
-  .outline {
-    width: 100%;
-    max-width: var(--content-width);
-    min-width: 0;
-    margin: 0 auto;
-    padding: 0.4rem 1.5rem 0.45rem;
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 0.85rem;
-    overflow-x: auto;
-    overflow-y: hidden;
-    overscroll-behavior-x: contain;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(111, 214, 255, 0.45) transparent;
+  .section-menu {
+    position: relative;
   }
 
-  .outline a {
-    flex: none;
+  summary {
+    padding: 0.35rem 0.9rem;
+    border: 2px solid rgba(111, 214, 255, 0.35);
+    border-radius: 999px;
+    list-style: none;
     font-family: var(--font-display);
-    font-size: 0.95rem;
+    font-size: 1rem;
+    color: var(--text);
+    background: rgba(7, 10, 43, 0.7);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  summary::after {
+    content: " ▾";
+  }
+
+  .section-menu[open] summary::after {
+    content: " ▴";
+  }
+
+  summary:hover {
+    color: var(--glow-cyan);
+    border-color: rgba(111, 214, 255, 0.7);
+  }
+
+  .section-menu nav {
+    position: absolute;
+    top: calc(100% + 0.55rem);
+    right: 0;
+    z-index: 20;
+    min-width: 11.5rem;
+    padding: 0.35rem;
+    display: flex;
+    flex-direction: column;
+    background: rgba(7, 10, 43, 0.96);
+    border: 2px solid rgba(111, 214, 255, 0.35);
+    border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  }
+
+  .section-menu nav a {
+    padding: 0.4rem 0.7rem;
+    border-radius: 8px;
+    font-family: var(--font-display);
+    font-size: 1rem;
     line-height: 1.15;
     color: var(--text);
     text-decoration: none;
     white-space: nowrap;
   }
 
-  .outline a:hover {
+  .section-menu nav a:hover {
     color: var(--glow-cyan);
+    background: rgba(111, 214, 255, 0.12);
+  }
+
+  /* The logo, Contents, and Classic/Play toggle have to share one row on a phone. */
+  @media (max-width: 480px) {
+    .bar {
+      padding: 0.5rem 0.75rem;
+    }
+
+    .bar-end {
+      gap: 0.4rem;
+    }
+
+    .logo {
+      font-size: 1.2rem;
+    }
+
+    summary {
+      padding: 0.28rem 0.55rem;
+      font-size: 0.85rem;
+    }
+
+    .bar-end :global(.mode-toggle a) {
+      padding: 0.3rem 0.55rem;
+      font-size: 0.9rem;
+    }
   }
 </style>

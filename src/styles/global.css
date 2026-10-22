@@ -45,8 +45,8 @@ body {
 
 html {
   scroll-behavior: smooth;
-  /* Clears the sticky header. Classic adds a section-link row under the logo, so this is taller than that row alone. */
-  scroll-padding-top: 7rem;
+  /* Keeps hash links (#projects, etc.) from hiding under the sticky nav. */
+  scroll-padding-top: 4.75rem;
   color-scheme: dark;
   /* The gradient lives on html so the decorative layer in BaseLayout can sit above it. */
   background: linear-gradient(135deg, var(--bg-deep) 0%, var(--bg-mid) 55%, var(--bg-violet) 100%);

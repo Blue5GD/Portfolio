@@ -1,5 +1,7 @@
 # Blue5GD Portfolio
 
+This site was made for Y/CS Catalyst.
+
 A classic portfolio, plus a small platformer at `/play`. The live site is `https://blue5gd.github.io/Portfolio/`, so every local URL also starts with `/Portfolio/`.
 
 ## Run it
