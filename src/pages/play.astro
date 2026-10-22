@@ -62,38 +62,30 @@ const gameContent = {
           <a class="gd-btn" href={base}>Back to Classic</a>
         </aside>
         <div id="level-cards" class="cards"></div>
+        <aside class="hall" aria-labelledby="hall-title">
+          <h2 id="hall-title">Hall of Fame</h2>
+          <p>
+            Clear The Final Battle with Practice off, then email{" "}
+            <a href={`mailto:${identity.email}`}>{identity.email}</a>{" "}
+            a YouTube video of the completion to be added. The video has to include audio of you pressing the keys, so the keyboard can be heard, not just the game. An accepted run is listed with a username you choose, the date you finished, and a link to the video.
+          </p>
+          {
+            hallOfFame.length === 0 ? (
+              <p class="hall-empty">No one is listed yet.</p>
+            ) : (
+              <ul class="hall-list">
+                {hallOfFame.map((entry) => (
+                  <li>
+                    <span class="hall-name">{entry.username}</span>
+                    <span class="hall-date">{entry.date}</span>
+                    <a href={entry.videoUrl} target="_blank" rel="noopener">Video</a>
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+        </aside>
       </div>
-      <aside class="hall" aria-labelledby="hall-title">
-        <div class="hall-inner">
-          <div class="hall-lead">
-            <p class="hall-kicker">The Final Battle</p>
-            <h2 id="hall-title">Hall of Fame</h2>
-            <p class="hall-note">This list will probably stay short.</p>
-          </div>
-          <div class="hall-body">
-            <p>
-              Clear The Final Battle with Practice off, then email{" "}
-              <a href={`mailto:${identity.email}`}>{identity.email}</a>{" "}
-              a YouTube video of the completion to be added. The video has to include audio of you pressing the keys, so the keyboard can be heard, not just the game. An accepted run is listed with a username you choose, the date you finished, and a link to the video.
-            </p>
-            {
-              hallOfFame.length === 0 ? (
-                <p class="hall-empty">No one is listed yet.</p>
-              ) : (
-                <ul class="hall-list">
-                  {hallOfFame.map((entry) => (
-                    <li>
-                      <span class="hall-name">{entry.username}</span>
-                      <span class="hall-date">{entry.date}</span>
-                      <a href={entry.videoUrl} target="_blank" rel="noopener">Video</a>
-                    </li>
-                  ))}
-                </ul>
-              )
-            }
-          </div>
-        </div>
-      </aside>
       <div class="select-inner">
         <p id="attempt-total" class="attempts" aria-live="polite"></p>
         <div class="select-actions">
@@ -194,7 +186,7 @@ const gameContent = {
     flex: 1;
     min-height: 0;
     overflow: auto;
-    /* Side padding lives on .select-inner so the Hall of Fame band can run edge to edge. */
+    /* Side space lives on .select-inner, so the level cards and the Hall of Fame share one width. */
     padding: 1.25rem 0 2rem;
   }
 
@@ -249,46 +241,24 @@ const gameContent = {
     color: var(--text-muted);
   }
 
-  /* Full-width trophy band. Gold on the same navy as the rest of the site, with the same black outline language as the level cards. */
+  /* Same width as the level cards above it, because it lives in .select-inner. Gold, but the same rounded card shape as those levels. */
   .hall {
-    margin-top: 1.5rem;
-    padding: 1.35rem 0 1.5rem;
+    margin-top: 1.25rem;
+    padding: 1.15rem 1.15rem 1.3rem;
     color: var(--text);
     background:
-      linear-gradient(90deg, rgba(7, 10, 43, 0.2), rgba(240, 193, 75, 0.16) 18%, rgba(240, 193, 75, 0.22) 50%, rgba(240, 193, 75, 0.16) 82%, rgba(7, 10, 43, 0.2)),
-      linear-gradient(180deg, rgba(48, 36, 10, 0.92), rgba(7, 10, 43, 0.94));
-    border-top: 3px solid #000;
-    border-bottom: 3px solid #000;
+      radial-gradient(ellipse at 50% 0%, rgba(240, 193, 75, 0.2), transparent 58%),
+      linear-gradient(180deg, rgba(48, 36, 10, 0.94), rgba(7, 10, 43, 0.96));
+    border: 3px solid #000;
+    border-radius: 16px;
     box-shadow:
-      inset 0 3px 0 #f0c14b,
-      inset 0 -3px 0 #8a6418;
-  }
-
-  .hall-inner {
-    width: min(72rem, calc(100% - 2rem));
-    margin: 0 auto;
-    display: grid;
-    gap: 0.85rem 2rem;
-  }
-
-  @media (min-width: 800px) {
-    .hall-inner {
-      grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
-      align-items: start;
-    }
-  }
-
-  .hall-kicker {
-    margin: 0 0 0.15rem;
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #f0c14b;
+      0 0 0 2px rgba(240, 193, 75, 0.72),
+      0 6px 0 #000;
   }
 
   .hall h2 {
-    margin: 0;
+    margin: 0 0 0.85rem;
+    text-align: center;
     font-size: clamp(1.8rem, 3vw, 2.4rem);
     color: #ffe7a3;
     text-shadow:
@@ -296,15 +266,8 @@ const gameContent = {
       0 0 16px rgba(240, 193, 75, 0.45);
   }
 
-  .hall-note {
-    margin: 0.45rem 0 0;
-    color: #f6e2a8;
-    font-size: 0.95rem;
-  }
-
-  .hall-body p {
+  .hall > p {
     margin: 0;
-    max-width: 46rem;
     color: var(--text);
     font-size: 0.98rem;
   }
@@ -314,8 +277,8 @@ const gameContent = {
     font-weight: 600;
   }
 
-  .hall-empty {
-    margin: 0.85rem 0 0;
+  .hall .hall-empty {
+    margin: 1.6rem 0 0;
     padding: 0.85rem 1rem;
     color: #ffe7a3;
     background: rgba(7, 10, 43, 0.45);
@@ -327,7 +290,7 @@ const gameContent = {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
     gap: 0.75rem;
-    margin: 0.85rem 0 0;
+    margin: 1.6rem 0 0;
     padding: 0;
     list-style: none;
   }
