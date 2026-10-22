@@ -30,7 +30,10 @@ const base = import.meta.env.BASE_URL;
 <style>
   .hero {
     position: relative;
-    min-height: calc(100vh - 60px);
+    /* Leave a strip of Featured on screen. 13.5rem is the sticky header plus about 120px of that section.
+       svh uses the area a phone actually shows, so the browser toolbars don't cover the strip. */
+    min-height: calc(100vh - 13.5rem);
+    min-height: calc(100svh - 13.5rem);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -95,6 +98,14 @@ const base = import.meta.env.BASE_URL;
   @media (min-width: 768px) and (pointer: fine) {
     .mobile-game-note {
       display: none;
+    }
+  }
+
+  /* The note only shows on a narrow screen, and it makes the hero taller.
+     Less padding underneath keeps a hint of Featured in view. */
+  @media (max-width: 767px) {
+    .hero {
+      padding-bottom: 1.25rem;
     }
   }
 </style>

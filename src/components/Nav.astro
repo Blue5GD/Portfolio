@@ -8,13 +8,35 @@ interface Props {
 
 const { mode } = Astro.props;
 const base = import.meta.env.BASE_URL;
+
+// These ids exist only on the classic page. Hash links stay on this page.
+const sections = [
+  { href: "#hero", label: "Hero" },
+  { href: "#featured", label: "Featured" },
+  { href: "#about", label: "About" },
+  { href: "#projects", label: "Projects" },
+  { href: "#experience", label: "Experience" },
+  { href: "#awards", label: "Awards" },
+  { href: "#skills", label: "Skills" },
+  { href: "#education", label: "Education" },
+  { href: "#contact", label: "Contact" },
+];
 ---
 
 <header class="nav">
-  <nav aria-label="Main">
+  <nav class="bar" aria-label="Main">
     <a class="logo wordmark" href={base}>{identity.brand}</a>
     <ModeToggle current={mode} />
   </nav>
+  {
+    mode === "classic" && (
+      <nav class="outline" aria-label="On this page">
+        {sections.map((section) => (
+          <a href={section.href}>{section.label}</a>
+        ))}
+      </nav>
+    )
+  }
 </header>
 
 <style>
@@ -27,7 +49,7 @@ const base = import.meta.env.BASE_URL;
     border-bottom: 1px solid rgba(111, 214, 255, 0.15);
   }
 
-  nav {
+  .bar {
     max-width: var(--content-width);
     margin: 0 auto;
     padding: 0.6rem 1.5rem;
@@ -40,5 +62,37 @@ const base = import.meta.env.BASE_URL;
   .logo {
     font-size: 1.6rem;
     text-decoration: none;
+  }
+
+  /* Text links, not chunky buttons: nine buttons would make this sticky bar too tall.
+     min-width: 0 lets a narrow window scroll the row instead of widening the page. */
+  .outline {
+    width: 100%;
+    max-width: var(--content-width);
+    min-width: 0;
+    margin: 0 auto;
+    padding: 0.4rem 1.5rem 0.45rem;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.85rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(111, 214, 255, 0.45) transparent;
+  }
+
+  .outline a {
+    flex: none;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    line-height: 1.15;
+    color: var(--text);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .outline a:hover {
+    color: var(--glow-cyan);
   }
 </style>
