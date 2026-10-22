@@ -11,6 +11,8 @@ export interface Identity {
   name: string;
   brand: string;
   tagline: string;
+  /** Shown in the classic hero. Example: "10/10/26". */
+  contentUpdated: string;
   email: string;
   github: string;
   linkedin: string;
