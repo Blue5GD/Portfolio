@@ -135,7 +135,11 @@ export function resetRun(state: GameState): void {
 }
 
 export function step(state: GameState, input: Input, dt: number): void {
-  if (input.restart && !(state.phase === "paused" && state.pauseReason === "dialog") && state.phase !== "won") {
+  // A dialog or a too-small window ignores R, so that key can't cancel the pause.
+  const blockRestart =
+    state.phase === "won" ||
+    (state.phase === "paused" && (state.pauseReason === "dialog" || state.pauseReason === "layout"));
+  if (input.restart && !blockRestart) {
     input.restart = false;
     respawn(state, true);
   } else {
@@ -144,6 +148,7 @@ export function step(state: GameState, input: Input, dt: number): void {
 
   if (input.pausePressed) {
     input.pausePressed = false;
+    // Esc only toggles a menu pause. It can't cancel a dialog or a too-small window.
     if (state.phase === "play") {
       state.phase = "paused";
       state.pauseReason = "menu";

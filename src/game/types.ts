@@ -199,8 +199,8 @@ export interface GameState {
   level: Level;
   player: Player;
   phase: Phase;
-  /** "menu" is Esc. "dialog" is an info box. Win is its own phase. */
-  pauseReason: "menu" | "dialog" | null;
+  /** "menu" is Esc. "dialog" is an info box. "layout" is a window too small to play. Win is its own phase. */
+  pauseReason: "menu" | "dialog" | "layout" | null;
   checkpoint: { x: number; y: number };
   /**
    * Practice mode is optional. While it is on, Z pushes the cube's position

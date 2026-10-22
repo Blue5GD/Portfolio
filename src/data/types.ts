@@ -82,3 +82,11 @@ export interface EducationItem {
   dates: string;
   details?: string;
 }
+
+/** One accepted clear of The Final Battle, shown on the play page. */
+export interface HallOfFameEntry {
+  username: string;
+  /** Already formatted, for example "March 2, 2027". */
+  date: string;
+  videoUrl: string;
+}

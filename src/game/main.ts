@@ -60,6 +60,8 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   const creditsBtn = document.querySelector<HTMLButtonElement>("#credits-btn");
   const status = document.querySelector<HTMLElement>("#game-status");
   const help = document.querySelector<HTMLElement>("#game-help");
+  const layoutPause = document.querySelector<HTMLElement>("#layout-pause");
+  const layoutLeave = document.querySelector<HTMLButtonElement>("#layout-leave");
   const muteButtons = [
     ...document.querySelectorAll<HTMLButtonElement>("[data-mute]"),
   ];
@@ -87,6 +89,8 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     !creditsBtn ||
     !status ||
     !help ||
+    !layoutPause ||
+    !layoutLeave ||
     muteButtons.length === 0 ||
     volumeInputs.length === 0
   ) {
@@ -108,8 +112,12 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   const practice: HTMLButtonElement = practiceBtn;
   const live: HTMLElement = status;
   const helpEl: HTMLElement = help;
+  const layoutEl: HTMLElement = layoutPause;
+  const layoutLeaveBtn: HTMLButtonElement = layoutLeave;
 
   let playing = false;
+  // True while the too-small prompt is up. Separate from pauseReason so a menu or dialog pause can stay.
+  let layoutPromptOpen = false;
   let currentIndex = -1;
   let state: GameState | null = null;
   let stopLoop: (() => void) | null = null;
@@ -122,7 +130,11 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     volume,
   );
 
-  const { input, detach } = attachInput(() => dialog.open || !playing, toggleMute);
+  // Keys are ignored while the too-small prompt is up, same as while a dialog is open.
+  const { input, detach } = attachInput(
+    () => dialog.open || !playing || layoutPromptOpen,
+    toggleMute,
+  );
 
   // "any" means Esc and the button both continue (info panels).
   // "ok" means only the confirm button continues (reset progress).
@@ -164,9 +176,15 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     const action = closeAction;
     closeAction = "cancel";
     dialogCancel.hidden = true;
-    if (closeMode === "ok" && action !== "ok") return;
+    if (closeMode === "ok" && action !== "ok") {
+      // A cancelled confirm can land while the window is narrow. Pause instead of running.
+      syncLayoutPause();
+      return;
+    }
     fn?.();
-    if (playing && !dialog.open) canvas.focus();
+    // Closing a panel while the window is still narrow should pause, not run.
+    syncLayoutPause();
+    if (playing && !dialog.open && !layoutPromptOpen) canvas.focus();
   });
 
   function openDialog(okLabel: string, after: () => void, mode: "any" | "ok" = "any") {
@@ -231,10 +249,6 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     syncVolume(input);
   }
 
-  // A joke on The Final Battle card, and again when that course is cleared for real.
-  const finalBattleJoke =
-    "If you clear The Final Battle in normal mode and send me a video of yourself completing it, I will give you $50.";
-
   /** Clear beats practice, and practice beats skip. Null means not finished yet. */
   function levelMark(index: number): "cleared" | "practice" | "skipped" | null {
     if (progress.cleared.includes(index)) return "cleared";
@@ -279,12 +293,6 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
       badge.textContent = locked ? "Locked" : markLabel ? markLabel : playable ? readyLabel : "Unlocked";
 
       card.append(face, title, diff, song, section, badge);
-      if (course.level?.finale) {
-        const joke = document.createElement("p");
-        joke.className = "tidbit";
-        joke.textContent = finalBattleJoke;
-        card.append(joke);
-      }
 
       if (!locked) {
         const actions = document.createElement("div");
@@ -401,12 +409,6 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
         }
         dialogBody.prepend(runNote, totalNote);
         if (practicing) dialogBody.prepend(modeNote);
-        else {
-          const joke = document.createElement("p");
-          joke.className = "tidbit";
-          joke.textContent = finalBattleJoke;
-          dialogBody.prepend(joke);
-        }
         openDialog("Level select", () => showSelect());
         return;
       }
@@ -430,6 +432,8 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
       openDialog("Level select", () => showSelect());
     };
 
+    layoutPromptOpen = false;
+    layoutEl.hidden = true;
     state = next;
     currentIndex = index;
     progress.attempts += 1;
@@ -451,17 +455,29 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
 
     stopLoop = startLoop(
       (dt) => {
-        if (state) step(state, input, dt);
+        if (!state) return;
+        if (layoutPromptOpen) {
+          // Esc, R, jump, and practice keys must not land while this prompt is up.
+          clearEdges();
+          if (state.phase === "play") {
+            state.phase = "paused";
+            state.pauseReason = "layout";
+          }
+          // Death and the win panel stay as they are, but they don't advance.
+          if (state.phase !== "paused") return;
+        }
+        step(state, input, dt);
       },
       () => {
         if (!state) return;
         // Crashes, info panels, and the clear panel keep the song going.
-        // The pause menu is the one that waits.
+        // The pause menu and a too-small window are what make it wait.
         const hearing =
-          state.phase === "play" ||
-          state.phase === "dead" ||
-          state.phase === "won" ||
-          (state.phase === "paused" && state.pauseReason === "dialog");
+          !layoutPromptOpen &&
+          (state.phase === "play" ||
+            state.phase === "dead" ||
+            state.phase === "won" ||
+            (state.phase === "paused" && state.pauseReason === "dialog"));
         music.setActive(hearing);
         render(context, state);
         syncStatus();
@@ -469,7 +485,69 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     );
   }
 
+  // Cover the canvas until the window can show the keyboard layout again.
+  // A menu or dialog pause is left alone; this only takes over a running level.
+  function holdForLayout() {
+    if (!state || !playing) return;
+    const first = !layoutPromptOpen;
+    layoutPromptOpen = true;
+    layoutEl.hidden = false;
+    clearEdges();
+    if (state.phase === "play") {
+      state.phase = "paused";
+      state.pauseReason = "layout";
+    }
+    if (!first) return;
+    // Same wait as the pause menu. A dialog pause was still playing the song.
+    // Don't move focus onto Level select: Space is jump, and a focused button would treat it as a click.
+    music.setActive(false);
+  }
+
+  // resume is false when they leave on purpose. A menu or dialog pause stays either way.
+  function dismissLayoutPrompt(resume: boolean) {
+    if (!layoutPromptOpen) return;
+    layoutPromptOpen = false;
+    layoutEl.hidden = true;
+    if (!state) return;
+    const fromLayout = state.pauseReason === "layout";
+    if (fromLayout) {
+      state.pauseReason = null;
+      if (resume) {
+        state.phase = "play";
+        // The song was waiting only because of this prompt.
+        music.setActive(true);
+        if (!dialog.open) canvas.focus();
+      }
+      return;
+    }
+    if (!resume || state.pauseReason === "menu") return;
+    if (
+      state.phase === "play" ||
+      state.phase === "dead" ||
+      state.phase === "won" ||
+      state.pauseReason === "dialog"
+    ) {
+      // A dialog, a crash, or the win panel had the song. This prompt was the only reason it waited.
+      music.setActive(true);
+    }
+  }
+
+  function syncLayoutPause() {
+    // Level select has no run to pause. A narrow window only hides Play there.
+    if (!playing || !state) {
+      if (layoutPromptOpen) dismissLayoutPrompt(false);
+      return;
+    }
+    if (!keyboardGameAvailable()) {
+      holdForLayout();
+      return;
+    }
+    if (layoutPromptOpen) dismissLayoutPrompt(true);
+  }
+
   function showSelect() {
+    dismissLayoutPrompt(false);
+    layoutEl.hidden = true;
     playing = false;
     currentIndex = -1;
     music.stop();
@@ -483,7 +561,7 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   }
 
   function skipLevel() {
-    if (!state || currentIndex < 0 || dialog.open) return;
+    if (!state || currentIndex < 0 || dialog.open || layoutPromptOpen) return;
     const course = courses[currentIndex];
     if (!course?.level) return;
     state.phase = "paused";
@@ -508,14 +586,15 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     openDialog("Continue", () => openRefs(course.level?.panels ?? [], () => showSelect(), "Level select"));
   }
 
+  layoutLeaveBtn.addEventListener("click", () => showSelect());
   pause.addEventListener("click", () => {
-    if (!state || dialog.open || state.phase === "won" || state.phase === "dead") return;
+    if (!state || dialog.open || layoutPromptOpen || state.phase === "won" || state.phase === "dead") return;
     input.pausePressed = true;
     // Focus would stay on this button, and keys are ignored while a button is focused.
     canvas.focus();
   });
   practice.addEventListener("click", () => {
-    if (!state || dialog.open || state.phase === "won") return;
+    if (!state || dialog.open || layoutPromptOpen || state.phase === "won") return;
     state.practice = !state.practice;
     canvas.focus();
   });
@@ -551,10 +630,10 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   };
   motion.addEventListener("change", onMotion);
 
-  // Leaving a keyboard layout (a phone rotation, or a window dragged narrow)
-  // drops back to the level select. The note there explains why Play is gone.
+  // A narrow window or a coarse pointer used to leave the level. Keep the run and wait.
+  // On the level select this still only refreshes the cards, so Play hides there.
   const stopKeyboardWatch = watchKeyboardGame(() => {
-    if (!keyboardGameAvailable() && playing) showSelect();
+    syncLayoutPause();
     renderCards();
   });
 
@@ -579,10 +658,10 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   let lastStatus = "";
   function syncStatus() {
     if (!state) return;
-    const paused = state.phase === "paused" && state.pauseReason === "menu";
-    const label = paused ? "Resume" : "Pause";
+    const menuPaused = state.phase === "paused" && state.pauseReason === "menu";
+    const label = menuPaused ? "Resume" : "Pause";
     if (pause.textContent !== label) pause.textContent = label;
-    pause.setAttribute("aria-pressed", paused ? "true" : "false");
+    pause.setAttribute("aria-pressed", menuPaused ? "true" : "false");
 
     const practicing = state.practice;
     practice.textContent = practicing ? "Practice on" : "Practice";
@@ -594,8 +673,9 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
 
     let message = `Attempt ${state.attempts}.`;
     if (practicing) message = `Practice mode. ${state.practicePoints.length} placed. ${message}`;
-    if (state.phase === "dead") message = `Crashed. ${message}`;
-    else if (paused) message = `Paused. ${difficultyLabel(state.difficulty)}.`;
+    if (layoutPromptOpen) message = "Window is too small. Make it wider to resume.";
+    else if (state.phase === "dead") message = `Crashed. ${message}`;
+    else if (menuPaused) message = `Paused. ${difficultyLabel(state.difficulty)}.`;
     else if (state.phase === "won") message = `${state.level.title} clear. Attempts this run: ${state.attempts}.`;
     if (message !== lastStatus) {
       live.textContent = message;

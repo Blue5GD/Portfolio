@@ -103,6 +103,7 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
   ctx.restore();
 
   drawHud(ctx, state);
+  // The too-small pause has an HTML prompt, so don't also draw "Paused" here.
   if (state.phase === "paused" && state.pauseReason === "menu") drawPaused(ctx, state);
 }
 

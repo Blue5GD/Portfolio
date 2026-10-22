@@ -12,6 +12,7 @@ import { awards } from "../data/awards";
 import { education } from "../data/education";
 import { experience } from "../data/experience";
 import { featured } from "../data/featured";
+import { hallOfFame } from "../data/hallOfFame";
 import { identity } from "../data/identity";
 import { projects } from "../data/projects";
 import { skills } from "../data/skills";
@@ -61,6 +62,30 @@ const gameContent = {
           <a class="gd-btn" href={base}>Back to Classic</a>
         </aside>
         <div id="level-cards" class="cards"></div>
+        <aside class="hall" aria-labelledby="hall-title">
+          <h2 id="hall-title">Hall of Fame</h2>
+          <p>
+            Clear The Final Battle with Practice off, then email{" "}
+            <a href={`mailto:${identity.email}`}>{identity.email}</a>{" "}
+            a YouTube video of the completion to be added. The video has to include audio of you pressing the keys, so the keyboard can be heard, not just the game. An accepted run is listed with a username you choose, the date you finished, and a link to the video.
+          </p>
+          <p class="hall-note">This list will probably stay short.</p>
+          {
+            hallOfFame.length === 0 ? (
+              <p class="hall-empty">No one is listed yet.</p>
+            ) : (
+              <ul class="hall-list">
+                {hallOfFame.map((entry) => (
+                  <li>
+                    <span class="hall-name">{entry.username}</span>
+                    <span class="hall-date">{entry.date}</span>
+                    <a href={entry.videoUrl} target="_blank" rel="noopener">Video</a>
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+        </aside>
         <p id="attempt-total" class="attempts" aria-live="polite"></p>
         <div class="select-actions">
           <label class="volume">
@@ -94,6 +119,16 @@ const gameContent = {
         <button id="practice-btn" class="gd-btn gd-btn--alt" type="button" aria-pressed="false">Practice</button>
         <button id="skip-btn" class="gd-btn gd-btn--alt" type="button">Skip level</button>
         <button id="pause-btn" class="gd-btn gd-btn--alt" type="button">Pause</button>
+      </div>
+      <div id="layout-pause" class="layout-pause" hidden>
+        <div class="layout-panel" role="region" aria-labelledby="layout-title">
+          <h2 id="layout-title">Window too small</h2>
+          <p>The window is too small to keep playing. Make it wider and the level will resume.</p>
+          <p>
+            The same writing is on the <a href={base}>Classic page</a> if you would rather leave.
+          </p>
+          <button id="layout-leave" class="gd-btn" type="button">Level select</button>
+        </div>
       </div>
     </section>
 
@@ -204,6 +239,56 @@ const gameContent = {
     color: var(--text-muted);
   }
 
+  /* Compact on purpose. The cards above are the main thing on this screen. */
+  .hall {
+    max-width: 36rem;
+    margin-top: 1.25rem;
+    padding: 0.75rem 0.9rem 0.85rem;
+    background: rgba(7, 10, 43, 0.55);
+    border: 3px solid #000;
+    border-radius: 12px;
+    box-shadow: 0 4px 0 #000;
+  }
+
+  .hall h2 {
+    margin: 0 0 0.35rem;
+    font-size: 1.15rem;
+  }
+
+  .hall p,
+  .hall li {
+    margin: 0 0 0.45rem;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+  }
+
+  .hall-empty {
+    margin-bottom: 0;
+  }
+
+  .hall-list {
+    margin: 0.15rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .hall-list li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    align-items: baseline;
+    margin: 0.35rem 0 0;
+  }
+
+  .hall-name {
+    color: var(--text);
+    font-family: var(--font-display);
+  }
+
+  .hall-date {
+    color: var(--text-muted);
+  }
+
   .select-actions {
     display: flex;
     flex-wrap: wrap;
@@ -215,6 +300,49 @@ const gameContent = {
     position: relative;
     flex: 1;
     min-height: 0;
+  }
+
+  /* Sits on the canvas only, so the header's Classic link stays usable. */
+  .layout-pause {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow: auto;
+    background: rgba(4, 6, 24, 0.92);
+  }
+
+  .layout-pause[hidden] {
+    display: none !important;
+  }
+
+  .layout-panel {
+    width: min(28rem, 100%);
+    padding: 1.25rem 1.35rem 1.15rem;
+    color: var(--text);
+    background: linear-gradient(180deg, rgba(16, 22, 84, 0.98), rgba(7, 10, 43, 0.98));
+    border: 3px solid #000;
+    border-radius: 16px;
+    box-shadow:
+      0 0 0 2px rgba(111, 214, 255, 0.35),
+      0 6px 0 #000;
+  }
+
+  .layout-panel h2 {
+    margin: 0 0 0.65rem;
+    font-size: 1.7rem;
+    color: var(--ice);
+  }
+
+  .layout-panel p {
+    margin: 0 0 0.75rem;
+  }
+
+  .layout-panel .gd-btn {
+    margin-top: 0.15rem;
   }
 
   canvas {
@@ -399,11 +527,6 @@ const gameContent = {
     font-size: 0.92rem;
   }
 
-  #level-cards .tidbit {
-    color: var(--accent-pink);
-    font-size: 0.92rem;
-  }
-
   #level-cards .badge {
     margin-top: 0.35rem;
     font-family: var(--font-display);
@@ -478,10 +601,6 @@ const gameContent = {
   #notice p,
   #notice li {
     font-size: 1.02rem;
-  }
-
-  #notice .tidbit {
-    color: var(--accent-pink);
   }
 
   #notice .dates,
