@@ -7,5 +7,5 @@ export const identity: Identity = {
   email: "micah.winesberry@yale.edu",
   github: "https://github.com/Blue5GD",
   linkedin: "https://www.linkedin.com/in/mwinesberry/",
-  resumeFile: "Micah-Winesberry-Resume.pdf",
+  resumeFile: "resume.pdf",
 };
