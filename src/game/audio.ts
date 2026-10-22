@@ -71,7 +71,7 @@ export function createMusic(files: string[], startMuted: boolean, startVolume: n
   }
 
   function shouldPlay(): boolean {
-    return current >= 0 && active && !muted && !document.hidden;
+    return current >= 0 && active && !muted;
   }
 
   // Make the element match shouldPlay(). Safe to call as often as you like.
@@ -111,9 +111,15 @@ export function createMusic(files: string[], startMuted: boolean, startVolume: n
     active = false;
   }
 
+  // Switching tabs must not pause the song. If the browser paused the
+  // element anyway, start it again when this tab is showing.
+  function onVisible() {
+    if (!document.hidden) apply();
+  }
+
   window.addEventListener("pointerdown", onGesture, true);
   window.addEventListener("keydown", onGesture, true);
-  document.addEventListener("visibilitychange", apply);
+  document.addEventListener("visibilitychange", onVisible);
   window.addEventListener("pagehide", stop);
 
   return {
@@ -143,7 +149,7 @@ export function createMusic(files: string[], startMuted: boolean, startVolume: n
       stop();
       window.removeEventListener("pointerdown", onGesture, true);
       window.removeEventListener("keydown", onGesture, true);
-      document.removeEventListener("visibilitychange", apply);
+      document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("pagehide", stop);
     },
   };
