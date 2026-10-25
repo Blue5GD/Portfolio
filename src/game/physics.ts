@@ -300,24 +300,21 @@ function snapRightAngle(rad: number): number {
   return ((snapped % tau) + tau) % tau;
 }
 
-interface Box {
-  x: number;
-  y: number;
-  ch: string;
-}
-
 // Resolve X, then Y. Doing both at once makes the cube stick on corners.
 function moveX(state: GameState, dt: number): void {
   const p = state.player;
   p.x += p.vx * dt;
-  const hits = [...overlapping(state, p, "full"), ...overlappingPlatforms(state, p)];
+  const probeX = p.x;
+  const probeY = p.y;
   let hit = false;
-  for (const tile of hits) {
+  const resolve = (tileX: number): void => {
     hit = true;
-    if (p.vx > 0) p.x = Math.min(p.x, tile.x - p.w);
-    else if (p.vx < 0) p.x = Math.max(p.x, tile.x + TILE);
-    else pushOutX(p, tile.x);
-  }
+    if (p.vx > 0) p.x = Math.min(p.x, tileX - p.w);
+    else if (p.vx < 0) p.x = Math.max(p.x, tileX + TILE);
+    else pushOutX(p, tileX);
+  };
+  forEachOverlapping(state, p, "full", resolve);
+  forEachPlatform(state, p, probeX, probeY, resolve);
   if (hit) p.vx = 0;
 
   const maxX = state.level.width * TILE - p.w;
@@ -336,31 +333,34 @@ function moveY(state: GameState, dt: number): void {
   p.y += p.vy * dt;
   p.grounded = false;
 
-  const floors = [...overlapping(state, p, "full"), ...overlappingPlatforms(state, p)];
+  const probeX = p.x;
+  const probeY = p.y;
   let hit = false;
-  for (const tile of floors) {
+  const resolve = (_tileX: number, tileY: number): void => {
     hit = true;
     if (p.vy > 0) {
-      p.y = Math.min(p.y, tile.y - p.h);
+      p.y = Math.min(p.y, tileY - p.h);
       p.grounded = true;
     } else if (p.vy < 0) {
-      p.y = Math.max(p.y, tile.y + TILE);
+      p.y = Math.max(p.y, tileY + TILE);
     } else {
-      p.y = tile.y - p.h;
+      p.y = tileY - p.h;
       p.grounded = true;
     }
-  }
+  };
+  forEachOverlapping(state, p, "full", resolve);
+  forEachPlatform(state, p, probeX, probeY, resolve);
   if (hit) p.vy = 0;
 
   // One-way tiles only catch you when you were above them and are moving down.
   // Jumping up passes straight through.
   if (p.vy >= 0) {
-    for (const tile of overlapping(state, p, "oneway")) {
-      if (prevBottom > tile.y + 1) continue;
-      p.y = Math.min(p.y, tile.y - p.h);
+    forEachOverlapping(state, p, "oneway", (_tileX: number, tileY: number): void => {
+      if (prevBottom > tileY + 1) return;
+      p.y = Math.min(p.y, tileY - p.h);
       p.vy = 0;
       p.grounded = true;
-    }
+    });
   }
 
   const under = tileAt(state.level, Math.floor((p.x + p.w / 2) / TILE), Math.floor((p.y + p.h + 0.05) / TILE));
@@ -374,36 +374,48 @@ function pushOutX(p: Player, tileX: number): void {
   else p.x += intoRight;
 }
 
-function overlapping(state: GameState, p: Player, kind: "full" | "oneway"): Box[] {
+// Visit each hit as it is found. The step runs at 120 Hz, so building a fresh
+// list of hits every frame would leave a lot of garbage behind.
+function forEachOverlapping(
+  state: GameState,
+  p: Player,
+  kind: "full" | "oneway",
+  visit: (x: number, y: number) => void,
+): void {
   const level = state.level;
   const c0 = Math.floor(p.x / TILE);
   const c1 = Math.floor((p.x + p.w - 0.001) / TILE);
   const r0 = Math.floor(p.y / TILE);
   const r1 = Math.floor((p.y + p.h - 0.001) / TILE);
-  const hits: Box[] = [];
   for (let r = r0; r <= r1; r++) {
     for (let c = c0; c <= c1; c++) {
       const ch = tileAt(level, c, r);
-      if (kind === "full" && isSolid(state, c, r, ch)) hits.push({ x: c * TILE, y: r * TILE, ch });
-      if (kind === "oneway" && ch === "=") hits.push({ x: c * TILE, y: r * TILE, ch });
+      if (kind === "full" && isSolid(state, c, r, ch)) visit(c * TILE, r * TILE);
+      if (kind === "oneway" && ch === "=") visit(c * TILE, r * TILE);
     }
   }
-  return hits;
 }
 
-function overlappingPlatforms(state: GameState, p: Player): Box[] {
-  const hits: Box[] = [];
-  const right = p.x + p.w;
-  const bottom = p.y + p.h;
+// Platforms are probed at the position from before the tile pass. Resolving a
+// tile can move the cube into a platform it was not touching, which would add
+// an extra push.
+function forEachPlatform(
+  state: GameState,
+  p: Player,
+  probeX: number,
+  probeY: number,
+  visit: (x: number, y: number) => void,
+): void {
+  const right = probeX + p.w;
+  const bottom = probeY + p.h;
   for (const mover of state.movers) {
     if (mover.kind !== "platform") continue;
     // Standing exactly on the top is not an overlap. Gravity sinks the cube
     // a fraction of a pixel, and that is what counts as a landing.
-    if (right <= mover.x + 0.001 || p.x >= mover.x + TILE - 0.001) continue;
-    if (bottom <= mover.y + 0.001 || p.y >= mover.y + TILE - 0.001) continue;
-    hits.push({ x: mover.x, y: mover.y, ch: "#" });
+    if (right <= mover.x + 0.001 || probeX >= mover.x + TILE - 0.001) continue;
+    if (bottom <= mover.y + 0.001 || probeY >= mover.y + TILE - 0.001) continue;
+    visit(mover.x, mover.y);
   }
-  return hits;
 }
 
 function makeMover(def: MoverDef): Mover {
