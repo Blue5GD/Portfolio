@@ -57,7 +57,10 @@ export function createMusic(files: string[], startMuted: boolean, startVolume: n
       el.preload = "none";
       el.loop = true;
       el.volume = volume;
-      el.addEventListener("error", () => markBroken(index));
+      el.addEventListener("error", () => {
+        // A released element has left its slot; a late error from it is not a failure.
+        if (tracks[index] === el) markBroken(index);
+      });
       el.src = `${base}audio/${files[index]}`;
       tracks[index] = el;
     }
@@ -68,6 +71,20 @@ export function createMusic(files: string[], startMuted: boolean, startVolume: n
     broken.add(index);
     tracks[index]?.removeAttribute("src");
     tracks[index] = null;
+  }
+
+  // Unload a track so the browser can drop its media buffers. load() after
+  // removing src is what performs the release. The file stays in the browser's
+  // disk cache, so a later start() does not download it again.
+  function release(index: number) {
+    const el = tracks[index];
+    if (!el) return;
+    el.pause();
+    el.currentTime = 0;
+    // Clear the slot before unloading so a late error event cannot mark it broken.
+    tracks[index] = null;
+    el.removeAttribute("src");
+    el.load();
   }
 
   function shouldPlay(): boolean {
@@ -100,13 +117,8 @@ export function createMusic(files: string[], startMuted: boolean, startVolume: n
   }
 
   function stop() {
-    if (current >= 0) {
-      const el = tracks[current];
-      if (el) {
-        el.pause();
-        el.currentTime = 0;
-      }
-    }
+    // Unload every track, not just the current one, so no song stays in memory.
+    for (let i = 0; i < tracks.length; i += 1) release(i);
     current = -1;
     active = false;
   }
