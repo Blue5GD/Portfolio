@@ -18,6 +18,39 @@ const SHARDS = [
   { x: 3300, y: 60, w: 160 },
 ];
 
+// The sky gradient only changes when the viewport or the three sky colors
+// change, so keep the most recent one instead of building it every frame.
+// The context is part of the key in case the canvas is replaced.
+let skyCache: {
+  ctx: CanvasRenderingContext2D;
+  viewW: number;
+  viewH: number;
+  colors: [string, string, string];
+  gradient: CanvasGradient;
+} | null = null;
+
+// shadeTheme() mixes about twenty colors with string parses. Last Hope's
+// colors change smoothly with progress, so quantize to 1% steps and keep the
+// most recent result. Other themes return their base theme unchanged.
+let shadeCache: { base: Theme; step: number; theme: Theme } | null = null;
+
+// The red accent pass uses the same six overrides every frame. They only
+// depend on the level theme, so keep the most recent glow theme.
+let redGlowCache: { base: Theme; theme: Theme } | null = null;
+
+// The Final Battle's light is a radial gradient that only depends on the
+// light radius and DPR. Render it once into an offscreen canvas and blit it
+// each frame; the four rectangles outside it use the same edge color.
+type LightMask = {
+  canvas: HTMLCanvasElement;
+  radius: number;
+  dpr: number;
+  size: number;
+};
+let lightMaskCache: LightMask | null = null;
+
+const LIGHT_EDGE = "rgba(1, 1, 4, 0.985)";
+
 export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
   const { viewW, viewH, dpr } = state;
   if (viewW < 2 || viewH < 2) return;
@@ -27,12 +60,8 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
 
   const base = getTheme(state.level.theme);
   const progress = courseProgress(state);
-  const theme = shadeTheme(base, progress);
-  const sky = ctx.createLinearGradient(0, 0, viewW, viewH);
-  sky.addColorStop(0, theme.sky[0]);
-  sky.addColorStop(0.55, theme.sky[1]);
-  sky.addColorStop(1, theme.sky[2]);
-  ctx.fillStyle = sky;
+  const theme = shadeThemeCached(base, progress);
+  ctx.fillStyle = skyGradient(ctx, viewW, viewH, theme.sky);
   ctx.fillRect(0, 0, viewW, viewH);
 
   const shake = state.reducedMotion ? 0 : state.shake;
@@ -115,13 +144,52 @@ function courseProgress(state: GameState): number {
   return Math.min(1, Math.max(0, x / span));
 }
 
-// Bright red copies of the hazards and a thin line on top of the floor.
-// Drawn after the dark overlay, only in the last third of Last Hope.
-function drawRedAccents(ctx: CanvasRenderingContext2D, state: GameState): void {
-  const level = state.level;
-  const cam = state.camera;
-  const glow: Theme = {
-    ...getTheme(level.theme),
+function skyGradient(
+  ctx: CanvasRenderingContext2D,
+  viewW: number,
+  viewH: number,
+  colors: [string, string, string],
+): CanvasGradient {
+  const cached = skyCache;
+  if (
+    cached &&
+    cached.ctx === ctx &&
+    cached.viewW === viewW &&
+    cached.viewH === viewH &&
+    cached.colors[0] === colors[0] &&
+    cached.colors[1] === colors[1] &&
+    cached.colors[2] === colors[2]
+  ) {
+    return cached.gradient;
+  }
+  const gradient = ctx.createLinearGradient(0, 0, viewW, viewH);
+  gradient.addColorStop(0, colors[0]);
+  gradient.addColorStop(0.55, colors[1]);
+  gradient.addColorStop(1, colors[2]);
+  skyCache = { ctx, viewW, viewH, colors: [colors[0], colors[1], colors[2]], gradient };
+  return gradient;
+}
+
+// Last Hope's shadeTheme() is the only one that changes with progress. Round
+// progress to 1% buckets so the colors still step smoothly, but shadeTheme()
+// runs at most 101 times per course instead of every frame.
+function shadeThemeCached(base: Theme, progress: number): Theme {
+  if (base.darkness <= 0) return base;
+  const step = Math.round(progress * 100);
+  const cached = shadeCache;
+  if (cached && cached.base === base && cached.step === step) return cached.theme;
+  const theme = shadeTheme(base, step / 100);
+  shadeCache = { base, step, theme };
+  return theme;
+}
+
+// drawRedAccents() uses the same overrides every frame. Keep the most recent
+// one; a level theme change replaces it.
+function redGlowTheme(base: Theme): Theme {
+  const cached = redGlowCache;
+  if (cached && cached.base === base) return cached.theme;
+  const theme: Theme = {
+    ...base,
     spike: "#2a0810",
     spikeEdge: "#ff5a72",
     block: "#1a0a10",
@@ -129,25 +197,36 @@ function drawRedAccents(ctx: CanvasRenderingContext2D, state: GameState): void {
     oneWay: "#ff8fa3",
     oneWayEdge: "#ff5a72",
   };
+  redGlowCache = { base, theme };
+  return theme;
+}
+
+// Bright red copies of the hazards and a thin line on top of the floor.
+// Drawn after the dark overlay, only in the last third of Last Hope.
+function drawRedAccents(ctx: CanvasRenderingContext2D, state: GameState): void {
+  const level = state.level;
+  const cam = state.camera;
+  const glow = redGlowTheme(getTheme(level.theme));
   const c0 = Math.max(0, Math.floor(cam.x / TILE) - 1);
   const c1 = Math.min(level.width - 1, Math.ceil((cam.x + state.viewW) / TILE) + 1);
   const r0 = Math.max(0, Math.floor(cam.y / TILE) - 1);
   const r1 = Math.min(level.height - 1, Math.ceil((cam.y + state.viewH) / TILE) + 1);
 
-  ctx.save();
-  ctx.strokeStyle = "rgba(255, 70, 96, 0.9)";
-  ctx.lineWidth = 2;
+  // Batch the repeated shapes. Last Hope has hundreds of visible tiles, and
+  // one fill/stroke per style is much cheaper than one per tile.
+  const linePath = new Path2D();
+  const oneWayPath = new Path2D();
+  const spikePath = new Path2D();
+
   for (let r = r0; r <= r1; r++) {
     for (let c = c0; c <= c1; c++) {
       const ch = tileAt(level, c, r);
       const x = c * TILE;
       const y = r * TILE;
       if (ch === "#" || ch === "~") {
-        ctx.beginPath();
-        ctx.moveTo(x + 2, y + 1.5);
-        ctx.lineTo(x + TILE - 2, y + 1.5);
-        ctx.stroke();
-      } else if (ch === "=") drawOneWay(ctx, x, y, glow);
+        linePath.moveTo(x + 2, y + 1.5);
+        linePath.lineTo(x + TILE - 2, y + 1.5);
+      } else if (ch === "=") addOneWayPath(oneWayPath, x, y);
       else if (ch === "C") drawCheckpoint(ctx, x, y, isActiveCheckpoint(state, c, r));
       else if (ch === "I") drawInfo(ctx, x, y, state.collected.has(`${c},${r}`));
       else if (ch === "J") drawPad(ctx, x, y, state);
@@ -155,10 +234,23 @@ function drawRedAccents(ctx: CanvasRenderingContext2D, state: GameState): void {
       else if (ch === "O") drawPortal(ctx, x, y, state);
       else {
         const dir = spikeDir(ch);
-        if (dir) drawSpike(ctx, x, y, dir, glow);
+        if (dir) addSpikePath(spikePath, x, y, dir);
       }
     }
   }
+
+  ctx.save();
+  ctx.strokeStyle = "rgba(255, 70, 96, 0.9)";
+  ctx.lineWidth = 2;
+  ctx.stroke(linePath);
+  ctx.fillStyle = glow.oneWay;
+  ctx.fill(oneWayPath);
+  ctx.strokeStyle = glow.oneWayEdge;
+  ctx.stroke(oneWayPath);
+  ctx.fillStyle = glow.spike;
+  ctx.fill(spikePath);
+  ctx.strokeStyle = glow.spikeEdge;
+  ctx.stroke(spikePath);
   ctx.restore();
 
   for (const block of state.crumbles) {
@@ -174,6 +266,81 @@ function drawRedAccents(ctx: CanvasRenderingContext2D, state: GameState): void {
   }
 }
 
+// Build (or reuse) the pre-rendered light mask. The color stops match the old
+// full-screen radial gradient: transparent inside half the radius, then
+// darker toward 1.05 radii.
+function getLightMask(radius: number, dpr: number): LightMask | null {
+  const cached = lightMaskCache;
+  if (cached && cached.radius === radius && cached.dpr === dpr) return cached;
+
+  const size = Math.max(1, radius * 2.1);
+  const pixels = Math.max(1, Math.ceil(size * dpr));
+  const canvas = document.createElement("canvas");
+  canvas.width = pixels;
+  canvas.height = pixels;
+  const mask = canvas.getContext("2d");
+  if (!mask) return null;
+
+  // Draw at device resolution so the mask can be blitted 1:1 even when the
+  // main context has a fractional DPR.
+  mask.scale(pixels / size, pixels / size);
+  const center = size / 2;
+  const gradient = mask.createRadialGradient(
+    center,
+    center,
+    radius * 0.5,
+    center,
+    center,
+    radius * 1.05,
+  );
+  gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+  gradient.addColorStop(0.5, "rgba(0, 0, 0, 0.3)");
+  gradient.addColorStop(1, LIGHT_EDGE);
+  mask.fillStyle = gradient;
+  mask.fillRect(0, 0, size, size);
+
+  lightMaskCache = { canvas, radius, dpr, size };
+  return lightMaskCache;
+}
+
+// Fill the screen outside the pre-rendered mask with its edge color, then draw
+// the mask over the light's square. Everything is done in device pixels so the
+// mask and the four rectangles share exact boundaries; one pixel of overlap
+// hides any seam from fractional camera positions. Clamping to the canvas
+// bounds also handles viewports smaller than the mask.
+function drawLightMask(
+  ctx: CanvasRenderingContext2D,
+  mask: LightMask,
+  lx: number,
+  ly: number,
+  dpr: number,
+): void {
+  const half = mask.size / 2;
+  const left = Math.round((lx - half) * dpr);
+  const top = Math.round((ly - half) * dpr);
+  const right = left + mask.canvas.width;
+  const bottom = top + mask.canvas.height;
+  const width = ctx.canvas.width;
+  const height = ctx.canvas.height;
+  const x0 = Math.max(0, Math.min(width, left + 1));
+  const x1 = Math.max(x0, Math.min(width, right - 1));
+  const y0 = Math.max(0, Math.min(height, top + 1));
+  const y1 = Math.max(y0, Math.min(height, bottom - 1));
+
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = LIGHT_EDGE;
+  if (y0 > 0) ctx.fillRect(0, 0, width, y0);
+  if (y1 < height) ctx.fillRect(0, y1, width, height - y1);
+  const bandH = y1 - y0;
+  if (x0 > 0) ctx.fillRect(0, y0, x0, bandH);
+  if (x1 < width) ctx.fillRect(x1, y0, width - x1, bandH);
+  // Whole device pixels keep drawImage a straight copy, so the mask's soft
+  // edge does not get resampled every frame.
+  ctx.drawImage(mask.canvas, left, top);
+  ctx.restore();
+}
+
 // The Final Battle. Everything already drawn is covered by black, except a
 // circle around the cube. Then the things that glow are drawn on top:
 // spears (spikes), lit lasers, and markers fade out with distance, so they
@@ -187,12 +354,19 @@ function drawLight(ctx: CanvasRenderingContext2D, state: GameState, theme: Theme
 
   const lx = cx - cam.x + sx;
   const ly = cy - cam.y + sy;
-  const shade = ctx.createRadialGradient(lx, ly, radius * 0.5, lx, ly, radius * 1.05);
-  shade.addColorStop(0, "rgba(0, 0, 0, 0)");
-  shade.addColorStop(0.5, "rgba(0, 0, 0, 0.3)");
-  shade.addColorStop(1, "rgba(1, 1, 4, 0.985)");
-  ctx.fillStyle = shade;
-  ctx.fillRect(0, 0, viewW, viewH);
+  const mask = getLightMask(radius, state.dpr);
+  if (mask) {
+    drawLightMask(ctx, mask, lx, ly, state.dpr);
+  } else {
+    // If an offscreen canvas could not be created, keep the old per-frame
+    // gradient rather than leaving the screen unshaded.
+    const shade = ctx.createRadialGradient(lx, ly, radius * 0.5, lx, ly, radius * 1.05);
+    shade.addColorStop(0, "rgba(0, 0, 0, 0)");
+    shade.addColorStop(0.5, "rgba(0, 0, 0, 0.3)");
+    shade.addColorStop(1, LIGHT_EDGE);
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, 0, viewW, viewH);
+  }
 
   ctx.save();
   ctx.translate(sx - cam.x, sy - cam.y);
@@ -327,6 +501,17 @@ function drawWorld(ctx: CanvasRenderingContext2D, state: GameState, theme: Theme
   const r0 = Math.max(0, Math.floor(cam.y / TILE) - 1);
   const r1 = Math.min(level.height - 1, Math.ceil((cam.y + state.viewH) / TILE) + 1);
 
+  // Most of the visible world is one of a few repeated shapes. Build one path
+  // per style and fill/stroke it once, instead of issuing a fill and a stroke
+  // for every tile. Markers stay individual because they animate or change.
+  const blockPath = new Path2D();
+  const icePath = new Path2D();
+  const highlightPath = new Path2D();
+  const oneWayPath = new Path2D();
+  const spikePath = new Path2D();
+  const iciclePath = new Path2D();
+  const icicleShinePath = new Path2D();
+
   for (let r = r0; r <= r1; r++) {
     for (let c = c0; c <= c1; c++) {
       const ch = tileAt(level, c, r);
@@ -335,8 +520,13 @@ function drawWorld(ctx: CanvasRenderingContext2D, state: GameState, theme: Theme
       // Falling spikes and crumbles are drawn from their live state, below.
       // Laser cells are drawn as whole beams, also below.
       if (ch === "!" || ch === "x" || ch === "|" || ch === "-") continue;
-      if (ch === "#" || ch === "~") drawBlock(ctx, x, y, ch === "~", theme);
-      else if (ch === "=") drawOneWay(ctx, x, y, theme);
+      if (ch === "#") {
+        addBlockPath(blockPath, x, y);
+        if (theme.icicles) addBlockHighlight(highlightPath, x, y, 16);
+      } else if (ch === "~") {
+        addBlockPath(icePath, x, y);
+        addBlockHighlight(highlightPath, x, y, 22);
+      } else if (ch === "=") addOneWayPath(oneWayPath, x, y);
       else if (ch === "C") drawCheckpoint(ctx, x, y, isActiveCheckpoint(state, c, r));
       else if (ch === "I") drawInfo(ctx, x, y, state.collected.has(`${c},${r}`));
       else if (ch === "J") drawPad(ctx, x, y, state);
@@ -345,11 +535,42 @@ function drawWorld(ctx: CanvasRenderingContext2D, state: GameState, theme: Theme
       else if (theme.light <= 0) {
         // In the dark, spikes are drawn as glowing spears after the overlay (see drawLight).
         const dir = spikeDir(ch);
-        if (dir === "down" && theme.icicles) drawIcicle(ctx, x, y, theme);
-        else if (dir) drawSpike(ctx, x, y, dir, theme);
+        if (dir === "down" && theme.icicles) addIciclePath(iciclePath, icicleShinePath, x, y);
+        else if (dir) addSpikePath(spikePath, x, y, dir);
       }
     }
   }
+
+  ctx.fillStyle = theme.block;
+  ctx.fill(blockPath);
+  ctx.strokeStyle = theme.blockEdge;
+  ctx.lineWidth = 2;
+  ctx.stroke(blockPath);
+
+  ctx.fillStyle = theme.ice;
+  ctx.fill(icePath);
+  ctx.strokeStyle = theme.iceEdge;
+  ctx.stroke(icePath);
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.stroke(highlightPath);
+
+  ctx.fillStyle = theme.oneWay;
+  ctx.fill(oneWayPath);
+  ctx.strokeStyle = theme.oneWayEdge;
+  ctx.stroke(oneWayPath);
+
+  ctx.fillStyle = theme.spike;
+  ctx.fill(spikePath);
+  ctx.strokeStyle = theme.spikeEdge;
+  ctx.stroke(spikePath);
+
+  ctx.fillStyle = theme.spike;
+  ctx.fill(iciclePath);
+  ctx.strokeStyle = theme.spikeEdge;
+  ctx.stroke(iciclePath);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+  ctx.fill(icicleShinePath);
 
   for (const block of state.crumbles) {
     if (block.phase === "gone") continue;
@@ -396,6 +617,57 @@ function drawBlock(ctx: CanvasRenderingContext2D, x: number, y: number, slippery
     ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
     ctx.stroke();
   }
+}
+
+function addBlockPath(path: Path2D, x: number, y: number): void {
+  path.roundRect(x + 1, y + 1, TILE - 2, TILE - 2, 3);
+}
+
+function addBlockHighlight(path: Path2D, x: number, y: number, length: number): void {
+  path.moveTo(x + 8, y + 11);
+  path.lineTo(x + length, y + 11);
+}
+
+function addOneWayPath(path: Path2D, x: number, y: number): void {
+  path.rect(x + 2, y, TILE - 4, 8);
+}
+
+function addSpikePath(path: Path2D, x: number, y: number, dir: SpikeDir): void {
+  const left = x + 2;
+  const right = x + TILE - 2;
+  const top = y + 2;
+  const bottom = y + TILE - 2;
+  const midX = x + TILE / 2;
+  const midY = y + TILE / 2;
+  if (dir === "up") {
+    path.moveTo(left, bottom);
+    path.lineTo(midX, top);
+    path.lineTo(right, bottom);
+  } else if (dir === "down") {
+    path.moveTo(left, top);
+    path.lineTo(midX, bottom);
+    path.lineTo(right, top);
+  } else if (dir === "left") {
+    path.moveTo(right, top);
+    path.lineTo(left, midY);
+    path.lineTo(right, bottom);
+  } else {
+    path.moveTo(left, top);
+    path.lineTo(right, midY);
+    path.lineTo(left, bottom);
+  }
+  path.closePath();
+}
+
+function addIciclePath(path: Path2D, shine: Path2D, x: number, y: number): void {
+  path.moveTo(x + 8, y + 2);
+  path.lineTo(x + TILE - 8, y + 2);
+  path.lineTo(x + TILE / 2, y + TILE - 2);
+  path.closePath();
+  shine.moveTo(x + 14, y + 2);
+  shine.lineTo(x + 22, y + 2);
+  shine.lineTo(x + 16, y + 18);
+  shine.closePath();
 }
 
 function drawCrumble(
@@ -446,14 +718,6 @@ function drawFog(ctx: CanvasRenderingContext2D, state: GameState): void {
     ctx.fill();
   }
   ctx.restore();
-}
-
-function drawOneWay(ctx: CanvasRenderingContext2D, x: number, y: number, theme: Theme): void {
-  ctx.fillStyle = theme.oneWay;
-  ctx.fillRect(x + 2, y, TILE - 4, 8);
-  ctx.strokeStyle = theme.oneWayEdge;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x + 2, y, TILE - 4, 8);
 }
 
 function drawCheckpoint(
