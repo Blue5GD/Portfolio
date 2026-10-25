@@ -72,8 +72,8 @@ const sections = [
     position: sticky;
     top: 0;
     z-index: 10;
-    background: rgba(7, 10, 43, 0.75);
-    backdrop-filter: blur(8px);
+    /* Solid background instead of backdrop-filter: blur(), which re-blurs page content while scrolling. */
+    background: #070a2b;
     border-bottom: 1px solid rgba(111, 214, 255, 0.15);
   }
 

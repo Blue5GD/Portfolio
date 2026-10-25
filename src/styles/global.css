@@ -48,9 +48,8 @@ html {
   /* Keeps hash links (#projects, etc.) from hiding under the sticky nav. */
   scroll-padding-top: 4.75rem;
   color-scheme: dark;
-  /* The gradient lives on html so the decorative layer in BaseLayout can sit above it. */
-  background: linear-gradient(135deg, var(--bg-deep) 0%, var(--bg-mid) 55%, var(--bg-violet) 100%);
-  background-attachment: fixed;
+  /* Solid fallback. The gradient now lives on the fixed .atmosphere layer. */
+  background: var(--bg-deep);
   min-height: 100%;
 }
 
@@ -211,6 +210,8 @@ svg {
 /*
   Faint triangles and a few floating squares, like the avatar background.
   pointer-events: none so they never block clicks.
+  The viewport gradient is painted here instead of on html: a fixed layer
+  avoids background-attachment: fixed, which repaints on every scroll frame.
 */
 .atmosphere {
   position: fixed;
@@ -218,6 +219,7 @@ svg {
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+  background: linear-gradient(135deg, var(--bg-deep) 0%, var(--bg-mid) 55%, var(--bg-violet) 100%);
 }
 
 .shard {
