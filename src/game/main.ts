@@ -121,6 +121,8 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   let currentIndex = -1;
   let state: GameState | null = null;
   let stopLoop: (() => void) | null = null;
+  let lastPausedKey: string | null = null;
+  let lastStatus = "";
   let progress: Progress = loadProgress(courses.length);
   let muted = loadMuted();
   let volume = loadVolume();
@@ -435,6 +437,8 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     layoutPromptOpen = false;
     layoutEl.hidden = true;
     state = next;
+    lastPausedKey = null;
+    lastStatus = "";
     currentIndex = index;
     progress.attempts += 1;
     saveProgress(progress);
@@ -479,7 +483,27 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
             state.phase === "won" ||
             (state.phase === "paused" && state.pauseReason === "dialog"));
         music.setActive(hearing);
-        render(context, state);
+        // A paused frame draws the same picture every time. Keep the first one
+        // and skip the rest until something visible changes. A null key means
+        // play, dead, or won, which always draw.
+        const pausedKey =
+          state.phase === "paused"
+            ? [
+                state.phase,
+                state.pauseReason,
+                state.practice,
+                state.practicePoints.length,
+                state.attempts,
+                state.viewW,
+                state.viewH,
+                state.dpr,
+                layoutPromptOpen,
+              ].join("|")
+            : null;
+        if (pausedKey === null || pausedKey !== lastPausedKey) {
+          render(context, state);
+          lastPausedKey = pausedKey;
+        }
         syncStatus();
       },
     );
@@ -637,15 +661,26 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
     renderCards();
   });
 
+  // A Retina or 4K screen can ask for a much larger backing store than this
+  // flat art needs. Capping the ratio and the total pixels keeps those visitors
+  // smooth without changing the canvas's CSS size.
+  const MAX_DPR = 1.5;
+  const MAX_PIXELS = 2_500_000;
+
   function fit() {
     if (!state) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const rect = canvas.getBoundingClientRect();
-    state.viewW = Math.max(1, rect.width);
-    state.viewH = Math.max(1, rect.height);
+    const viewW = Math.max(1, rect.width);
+    const viewH = Math.max(1, rect.height);
+    let dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+    if (viewW * viewH * dpr * dpr > MAX_PIXELS) {
+      dpr = Math.sqrt(MAX_PIXELS / (viewW * viewH));
+    }
+    state.viewW = viewW;
+    state.viewH = viewH;
     state.dpr = dpr;
-    const w = Math.floor(state.viewW * dpr);
-    const h = Math.floor(state.viewH * dpr);
+    const w = Math.max(1, Math.floor(viewW * dpr));
+    const h = Math.max(1, Math.floor(viewH * dpr));
     if (canvas.width !== w || canvas.height !== h) {
       canvas.width = w;
       canvas.height = h;
@@ -655,17 +690,19 @@ export function mountGame(canvas: HTMLCanvasElement): () => void {
   const observer = new ResizeObserver(fit);
   observer.observe(canvas);
 
-  let lastStatus = "";
   function syncStatus() {
     if (!state) return;
     const menuPaused = state.phase === "paused" && state.pauseReason === "menu";
     const label = menuPaused ? "Resume" : "Pause";
+    const pauseAria = menuPaused ? "true" : "false";
     if (pause.textContent !== label) pause.textContent = label;
-    pause.setAttribute("aria-pressed", menuPaused ? "true" : "false");
+    if (pause.getAttribute("aria-pressed") !== pauseAria) pause.setAttribute("aria-pressed", pauseAria);
 
     const practicing = state.practice;
-    practice.textContent = practicing ? "Practice on" : "Practice";
-    practice.setAttribute("aria-pressed", practicing ? "true" : "false");
+    const practiceLabel = practicing ? "Practice on" : "Practice";
+    const practiceAria = practicing ? "true" : "false";
+    if (practice.textContent !== practiceLabel) practice.textContent = practiceLabel;
+    if (practice.getAttribute("aria-pressed") !== practiceAria) practice.setAttribute("aria-pressed", practiceAria);
     const helpText = practicing
       ? "Practice is on. Z places a checkpoint. X removes the last one. R restarts there."
       : "Arrows or WASD, hold jump. R restarts. Esc pauses. M mutes. The slider sets volume.";
